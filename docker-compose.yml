@@ -1,11 +1,13 @@
 services:
   backend:
+    container_name: concrete-backend
     build: ./backend
     restart: always
     networks:
       - tools-net
 
   frontend:
+    container_name: concrete-frontend
     build: ./frontend
     restart: always
     ports:
