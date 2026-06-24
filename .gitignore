@@ -30,6 +30,9 @@ build/
 # Claude memory
 .claude/
 
+# VSCode workspace
+*.code-workspace
+
 # Node modules
 frontend/node_modules/
 frontend/dist/
