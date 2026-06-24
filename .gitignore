@@ -27,6 +27,9 @@ dist/
 build/
 *.egg-info/
 
+# Claude memory
+.claude/
+
 # Node modules
 frontend/node_modules/
 frontend/dist/
