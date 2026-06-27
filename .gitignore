@@ -48,3 +48,7 @@ start-backend.bat
 
 # Database
 data/
+
+# Backend logs (rotating, per-startup timestamped files)
+backend/logs/
+logs/
