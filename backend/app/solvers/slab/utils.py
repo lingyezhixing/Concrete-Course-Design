@@ -1,79 +1,93 @@
-"""连续梁系数查表 — 多跨简支板的弯矩与剪力系数"""
+"""板配筋计算工具
 
-from dataclasses import dataclass
+钢筋混凝土基本公式（h₀/αs/ξ/As）与连续梁系数表见 :mod:`app.solvers.common`。
+本模块仅保留板专有的配筋逻辑——板按「钢筋直径 + 间距」配筋，与梁的
+「根数 + 直径」配筋方式不同。
+"""
+from __future__ import annotations
 
-__all__ = ["SlabCoefficients", "get_slab_coefficients"]
+from app.models.slab import ReinforcementBar, SectionReinforcement
+from app.solvers.common import (
+    alpha_s,
+    as_required,
+    effective_depth,
+    flexure_status,
+    xi,
+)
 
+__all__ = [
+    "generate_rebar_candidates",
+    "calc_section_reinforcement",
+]
 
-@dataclass
-class Coeff:
-    """单个位置的系数组"""
-    alpha: float   # 恒荷载弯矩系数
-    alpha1: float  # 活荷载弯矩系数
-    beta: float    # 恒荷载剪力系数
-    beta1: float   # 活荷载剪力系数
-
-
-@dataclass
-class SlabCoefficients:
-    """某跨数连续梁的完整系数集合"""
-    spans: int
-    moments: list[float]   # 弯矩系数 [跨1中, 支座B, 跨2中, 支座C, ...]
-    shears: list[float]    # 剪力系数 [端支座A, 支座B左, 支座B右, ...]
-    moment_alpha1: list[float]   # 活荷载弯矩系数
-    shear_beta1: list[float]     # 活荷载剪力系数
-
-
-# ============================================================
-# 系数表：(弯矩α, 弯矩α1, 剪力β, 剪力β1)
-# 弯矩按：跨1中, 支座B, 跨2中, 支座C, ... 顺序
-# 剪力按：端支座A, 支座B左, 支座B右, 支座C左, ... 顺序
-# ============================================================
-
-_COEFFICIENTS: dict[int, SlabCoefficients] = {
-    2: SlabCoefficients(
-        spans=2,
-        moments=[0.070, -0.125, 0.070],
-        moment_alpha1=[0.096, -0.125, 0.096],
-        shears=[0.375, -0.625, 0.625, -0.375],
-        shear_beta1=[0.437, -0.625, 0.625, -0.437],
-    ),
-    3: SlabCoefficients(
-        spans=3,
-        moments=[0.080, -0.100, 0.025, -0.100, 0.080],
-        moment_alpha1=[0.101, -0.117, 0.075, -0.117, 0.101],
-        shears=[0.400, -0.600, 0.500, -0.500, 0.600, -0.400],
-        shear_beta1=[0.450, -0.617, 0.583, -0.583, 0.617, -0.450],
-    ),
-    4: SlabCoefficients(
-        spans=4,
-        moments=[0.077, -0.107, 0.036, -0.071, 0.036, -0.107, 0.077],
-        moment_alpha1=[0.100, -0.121, 0.081, -0.107, 0.081, -0.121, 0.100],
-        shears=[0.393, -0.607, 0.536, -0.464, 0.464, -0.536, 0.607, -0.393],
-        shear_beta1=[0.446, -0.620, 0.603, -0.571, 0.517, -0.603, 0.620, -0.446],
-    ),
-    5: SlabCoefficients(
-        spans=5,
-        moments=[0.0781, -0.105, 0.0331, -0.079, 0.0462, -0.079, 0.0331, -0.105, 0.0781],
-        moment_alpha1=[0.100, -0.119, 0.0787, -0.111, 0.0855, -0.111, 0.0787, -0.119, 0.100],
-        shears=[0.394, -0.606, 0.526, -0.474, 0.500, -0.500, 0.474, -0.526, 0.606, -0.394],
-        shear_beta1=[0.447, -0.620, 0.598, -0.576, 0.591, -0.591, 0.576, -0.598, 0.620, -0.447],
-    ),
-}
+# 板常用钢筋直径 (mm) 与间距 (mm)
+_STANDARD_DIAMETERS: list[int] = [6, 8, 10, 12, 14]
+_STANDARD_SPACINGS: list[int] = [200, 180, 150, 120, 100, 80]
 
 
-def get_slab_coefficients(spans: int) -> SlabCoefficients:
-    """根据跨数获取连续梁系数。
+def generate_rebar_candidates(
+    as_required: float,
+    min_diameter: int = 8,
+) -> list[ReinforcementBar]:
+    """生成满足 As ≥ as_required 的板配筋方案（按面积升序）。
 
-    Args:
-        spans: 跨数，支持 2 ~ 5
-
-    Returns:
-        SlabCoefficients 数据对象
-
-    Raises:
-        ValueError: 跨数不在支持范围内
+    板按「直径 + 间距」配筋：每米板宽面积 = π·d²/4 × (1000/s)。
     """
-    if spans not in _COEFFICIENTS:
-        raise ValueError(f"不支持 {spans} 跨，目前仅支持 2 ~ 5 跨")
-    return _COEFFICIENTS[spans]
+    candidates: list[ReinforcementBar] = []
+    seen: set[str] = set()
+
+    for d in _STANDARD_DIAMETERS:
+        if d < min_diameter:
+            continue
+        for s in _STANDARD_SPACINGS:
+            bar = ReinforcementBar(diameter=d, spacing=s)
+            key = bar.display
+            if key in seen:
+                continue
+            seen.add(key)
+            if bar.area_per_meter >= as_required:
+                candidates.append(bar)
+
+    candidates.sort(key=lambda c: c.area_per_meter)
+    return candidates
+
+
+def calc_section_reinforcement(
+    name: str,
+    moment: float,
+    h: float,
+    cover: float,
+    bar_diameter: float,
+    fc: float,
+    fy: float,
+    gamma_d: float,
+    b: float = 1000.0,
+    min_bar_diameter: int = 8,
+) -> SectionReinforcement:
+    """计算单个板截面的配筋。
+
+    h₀ = h − c − d/2
+    αs = γd·M/(fc·b·h₀²)，ξ = 1 − √(1 − 2αs)，As = ξ·fc/fy·b·h₀
+    """
+    m = abs(moment)
+    h0 = effective_depth(h, cover, bar_diameter)
+    a_s = alpha_s(m, fc, b, h0, gamma_d)
+    rel_xi = xi(a_s)
+    as_req = as_required(rel_xi, fc, fy, b, h0)
+
+    candidates = generate_rebar_candidates(as_req, min_diameter=min_bar_diameter)
+    selected = candidates[0] if candidates else None
+    as_prov = selected.area_per_meter if selected else 0.0
+
+    return SectionReinforcement(
+        name=name,
+        moment=round(m, 4),
+        h0=round(h0, 2),
+        alpha_s=round(a_s, 4),
+        xi=round(rel_xi, 4),
+        as_required=round(as_req, 4),
+        selected_bar=selected,
+        as_provided=round(as_prov, 4),
+        status=flexure_status(as_req, as_prov),
+        candidates=candidates,
+    )

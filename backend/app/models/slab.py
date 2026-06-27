@@ -96,3 +96,47 @@ class SlabInternalForceOutput(BaseModel):
 
     moments: list[SlabMomentResult] = Field(description="各位置弯矩")
     shears: list[SlabShearResult] = Field(description="各位置剪力")
+
+
+# ──────────────────────────────────────────────
+# 配筋计算模型
+# ──────────────────────────────────────────────
+
+
+class ReinforcementBar(BaseModel):
+    """钢筋规格（直径 + 间距）"""
+
+    diameter: int = Field(description="钢筋直径 (mm)")
+    spacing: int = Field(description="钢筋间距 (mm)")
+
+    @property
+    def area_per_meter(self) -> float:
+        """每米板宽的钢筋面积 (mm²/m)"""
+        import math
+        return math.pi * self.diameter**2 / 4 * (1000 / self.spacing)
+
+    @property
+    def display(self) -> str:
+        """显示名称，如 Φ8@200"""
+        return f"Φ{self.diameter}@{self.spacing}"
+
+
+class SectionReinforcement(BaseModel):
+    """单个截面的配筋计算结果"""
+
+    name: str = Field(description="截面名称")
+    moment: float = Field(description="弯矩设计值 (kN·m)")
+    h0: float = Field(description="有效高度 (mm)")
+    alpha_s: float = Field(description="截面抵抗矩系数 αs")
+    xi: float = Field(description="相对受压区高度 ξ")
+    as_required: float = Field(description="所需钢筋面积 (mm²)")
+    selected_bar: ReinforcementBar | None = Field(description="选用的钢筋方案")
+    as_provided: float = Field(description="实配钢筋面积 (mm²)")
+    status: str = Field(description="状态：推荐 / 建议复核 / 不足")
+    candidates: list[ReinforcementBar] = Field(description="满足要求的候选方案")
+
+
+class SlabReinforcementOutput(BaseModel):
+    """板配筋计算结果汇总"""
+
+    sections: list[SectionReinforcement] = Field(description="各截面配筋结果")

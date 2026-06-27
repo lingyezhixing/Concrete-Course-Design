@@ -1,26 +1,26 @@
-"""板计算 — 连续梁系数查表测试"""
+"""连续梁系数查表测试（板、次梁共用）"""
 
 import pytest
-from app.solvers.slab.utils import get_slab_coefficients, SlabCoefficients
+from app.solvers.common import get_continuous_beam_coefficients, ContinuousBeamCoefficients
 
 
-class TestGetSlabCoefficients:
-    """get_slab_coefficients 基础行为"""
+class TestGetContinuousBeamCoefficients:
+    """get_continuous_beam_coefficients 基础行为"""
 
     def test_returns_correct_type(self):
-        coeffs = get_slab_coefficients(2)
-        assert isinstance(coeffs, SlabCoefficients)
+        coeffs = get_continuous_beam_coefficients(2)
+        assert isinstance(coeffs, ContinuousBeamCoefficients)
 
     def test_unsupported_spans_raises(self):
         with pytest.raises(ValueError, match="不支持"):
-            get_slab_coefficients(1)
+            get_continuous_beam_coefficients(1)
         with pytest.raises(ValueError, match="不支持"):
-            get_slab_coefficients(6)
+            get_continuous_beam_coefficients(6)
 
     def test_supported_range(self):
         """2 ~ 5 跨均不应报错"""
         for spans in (2, 3, 4, 5):
-            coeffs = get_slab_coefficients(spans)
+            coeffs = get_continuous_beam_coefficients(spans)
             assert coeffs.spans == spans
 
 
@@ -29,7 +29,7 @@ class TestTwoSpanCoefficients:
 
     @pytest.fixture
     def coeffs(self):
-        return get_slab_coefficients(2)
+        return get_continuous_beam_coefficients(2)
 
     def test_moment_count(self, coeffs):
         """3 个弯矩位置：跨1中、支座B、跨2中"""
@@ -65,7 +65,7 @@ class TestThreeSpanCoefficients:
 
     @pytest.fixture
     def coeffs(self):
-        return get_slab_coefficients(3)
+        return get_continuous_beam_coefficients(3)
 
     def test_moment_count(self, coeffs):
         """5 个弯矩位置：跨1中、B、跨2中、C、跨3中"""
@@ -91,7 +91,7 @@ class TestFourSpanCoefficients:
 
     @pytest.fixture
     def coeffs(self):
-        return get_slab_coefficients(4)
+        return get_continuous_beam_coefficients(4)
 
     def test_moment_count(self, coeffs):
         assert len(coeffs.moments) == 7
@@ -115,7 +115,7 @@ class TestFiveSpanCoefficients:
 
     @pytest.fixture
     def coeffs(self):
-        return get_slab_coefficients(5)
+        return get_continuous_beam_coefficients(5)
 
     def test_moment_count(self, coeffs):
         assert len(coeffs.moments) == 9

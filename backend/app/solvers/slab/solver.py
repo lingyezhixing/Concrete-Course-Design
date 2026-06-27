@@ -9,8 +9,10 @@ from app.models.slab import (
     SlabMomentResult,
     SlabShearResult,
     SlabInternalForceOutput,
+    SlabReinforcementOutput,
 )
-from app.solvers.slab.utils import get_slab_coefficients
+from app.solvers.common import get_continuous_beam_coefficients
+from app.solvers.slab.utils import calc_section_reinforcement
 
 __all__ = [
     "calculate_load",
@@ -18,6 +20,7 @@ __all__ = [
     "calculate_net_spans",
     "convert_loads",
     "calculate_internal_forces",
+    "calculate_slab_reinforcement",
 ]
 
 
@@ -135,7 +138,7 @@ def calculate_internal_forces(
     q = converted.converted_live
     n = inp.spans
     effective_spans = min(n, 5)
-    coeffs = get_slab_coefficients(effective_spans)
+    coeffs = get_continuous_beam_coefficients(effective_spans)
 
     def _map_span_table(actual_idx: int) -> int:
         if n <= 5:
@@ -214,3 +217,51 @@ def calculate_internal_forces(
         shears.append(SlabShearResult(name=name, value=round(value, 4)))
 
     return SlabInternalForceOutput(moments=moments, shears=shears)
+
+
+def calculate_slab_reinforcement(
+    moments: list[tuple[str, float]],
+    h: float,
+    cover: float,
+    bar_diameter: float,
+    fc: float,
+    fy: float,
+    gamma_d: float,
+    b: float = 1000.0,
+    min_bar_diameter: int = 8,
+) -> SlabReinforcementOutput:
+    """计算板全部截面的配筋。
+
+    对每个 (截面名, 弯矩) 对依次进行正截面配筋计算，
+    输出 αs、ξ、As_required、候选方案和推荐配筋。
+
+    Args:
+        moments: 截面弯矩列表 [(name, M), ...]
+        h: 板厚 (mm)
+        cover: 保护层厚度 (mm)
+        bar_diameter: 钢筋估计直径 (mm)
+        fc: 混凝土抗压强度设计值 (N/mm²)
+        fy: 钢筋抗拉强度设计值 (N/mm²)
+        gamma_d: 结构系数
+        b: 截面宽度 (mm)，板取 1000
+        min_bar_diameter: 最小钢筋直径 (mm)，板主筋通常 ≥ 8
+
+    Returns:
+        SlabReinforcementOutput
+    """
+    sections = []
+    for name, moment in moments:
+        sec = calc_section_reinforcement(
+            name=name,
+            moment=moment,
+            h=h,
+            cover=cover,
+            bar_diameter=bar_diameter,
+            fc=fc,
+            fy=fy,
+            gamma_d=gamma_d,
+            b=b,
+            min_bar_diameter=min_bar_diameter,
+        )
+        sections.append(sec)
+    return SlabReinforcementOutput(sections=sections)

@@ -1,0 +1,129 @@
+"""公共模块 — 钢筋混凝土基本公式与通用工具测试"""
+import math
+
+import pytest
+
+from app.solvers.common import (
+    alpha_s,
+    as_required,
+    calc_shear_design,
+    effective_depth,
+    flexure_status,
+    generate_bar_bundles,
+    xi,
+)
+
+
+class TestEffectiveDepth:
+    """有效高度 h₀ = h − c − d/2"""
+
+    def test_slab_standard(self):
+        """板: h=80, c=20, d=10 → 55"""
+        assert effective_depth(h=80, cover=20, bar_diameter=10) == 55.0
+
+    def test_beam_standard(self):
+        """次梁: h=400, c=30, d=20 → 360"""
+        assert effective_depth(h=400, cover=30, bar_diameter=20) == 360.0
+
+    def test_main_beam(self):
+        """主梁: h=500, c=30, d=20 → 460"""
+        assert effective_depth(h=500, cover=30, bar_diameter=20) == 460.0
+
+
+class TestAlphaS:
+    """αs = γd·M / (fc·b·h₀²)"""
+
+    def test_slab_m1(self):
+        """板 M1: M=2.6627, fc=9.6, b=1000, h0=55, γd=1.2 → 0.11"""
+        result = alpha_s(moment=2.6627, fc=9.6, b=1000, h0=55, gamma_d=1.2)
+        assert result == pytest.approx(0.11, abs=0.001)
+
+    def test_unit_moment(self):
+        """M=1kN·m, fc=9.6, b=1000, h0=100, γd=1.2"""
+        result = alpha_s(moment=1.0, fc=9.6, b=1000, h0=100, gamma_d=1.2)
+        expected = 1.2 * 1.0 * 1e6 / (9.6 * 1000 * 100**2)
+        assert result == pytest.approx(expected)
+
+
+class TestXi:
+    """ξ = 1 − √(1 − 2αs)"""
+
+    def test_known_value(self):
+        assert xi(0.11) == pytest.approx(0.1169, abs=0.0001)
+
+    def test_zero(self):
+        assert xi(0.0) == 0.0
+
+
+class TestAsRequired:
+    """As = ξ·(fc/fy)·b·h₀"""
+
+    def test_slab_m1(self):
+        """ξ=0.1169, fc=9.6, fy=270, b=1000, h0=55 → 228.5"""
+        result = as_required(xi=0.1169, fc=9.6, fy=270, b=1000, h0=55)
+        assert result == pytest.approx(228.5, abs=0.5)
+
+
+class TestFlexureStatus:
+    """配筋状态判定"""
+
+    def test_recommended(self):
+        """实配略大于需要 → 推荐"""
+        assert flexure_status(as_req=200, as_prov=251) == "推荐"
+
+    def test_review(self):
+        """实配远大于需要（>1.8 倍）→ 建议复核"""
+        assert flexure_status(as_req=100, as_prov=251) == "建议复核"
+
+    def test_insufficient(self):
+        """实配为 0 → 不足"""
+        assert flexure_status(as_req=200, as_prov=0) == "不足"
+
+
+class TestGenerateBarBundles:
+    """梁配筋候选生成"""
+
+    def test_all_meet_requirement(self):
+        """每个候选面积 ≥ as_required"""
+        candidates = generate_bar_bundles(as_required=900, beam_width=250)
+        for c in candidates:
+            assert c.area >= 900
+
+    def test_strict_fewer_than_loose(self):
+        """要求越高候选越少"""
+        loose = generate_bar_bundles(as_required=100, beam_width=200)
+        strict = generate_bar_bundles(as_required=1500, beam_width=200)
+        assert len(loose) > len(strict)
+
+    def test_sorted_by_area(self):
+        """候选按面积升序"""
+        candidates = generate_bar_bundles(as_required=500, beam_width=250)
+        areas = [c.area for c in candidates]
+        assert areas == sorted(areas)
+
+
+class TestCalcShearDesign:
+    """斜截面箍筋"""
+
+    def test_secondary_beam(self):
+        """次梁: V=74.62, b=200, h=400, c=30, d=20, fc=9.6"""
+        result = calc_shear_design(
+            max_shear=74.62, b=200, h=400, cover=30, bar_diameter=20,
+            fc=9.6, gamma_d=1.2, stirrup_diameter=6, stirrup_legs=2, fyv=270,
+        )
+        assert result.max_shear == pytest.approx(74.62, abs=0.01)
+        assert result.vc == pytest.approx(40.3, abs=0.5)
+        assert result.asv_s > 0
+        assert result.recommended_spacing > 0
+        assert result.hanger_area == 0.0  # 次梁无吊筋
+        assert result.need_stirrups is True
+
+    def test_main_beam_with_hanger(self):
+        """主梁: 有吊筋时 hanger_area > 0"""
+        result = calc_shear_design(
+            max_shear=170.71, b=250, h=500, cover=30, bar_diameter=20,
+            fc=9.6, gamma_d=1.2, stirrup_diameter=10, stirrup_legs=2, fyv=270,
+            hanger_force=50.0,
+        )
+        assert result.max_shear == pytest.approx(170.71, abs=0.01)
+        assert result.hanger_area > 0
