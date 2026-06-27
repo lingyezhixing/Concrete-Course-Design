@@ -1,25 +1,29 @@
 import { ref } from 'vue'
 
+export type Theme = 'dark' | 'light' | 'warm'
+
 const STORAGE_KEY = 'ccd-theme'
+const DEFAULT_THEME: Theme = 'dark'
+const VALID: ReadonlySet<Theme> = new Set(['dark', 'light', 'warm'])
 
-function readIsDark(): boolean {
+function readTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === null ? true : stored === 'dark'
+  return stored && VALID.has(stored as Theme) ? (stored as Theme) : DEFAULT_THEME
 }
 
-function applyClass(isDark: boolean): void {
-  document.documentElement.classList.toggle('dark', isDark)
+function applyTheme(next: Theme): void {
+  document.documentElement.dataset.theme = next
 }
+
+// 模块级单例：所有 useTheme() 调用共享同一主题状态
+const theme = ref<Theme>(readTheme())
+applyTheme(theme.value)
 
 export function useTheme() {
-  const isDark = ref(readIsDark())
-  applyClass(isDark.value)
-
-  function toggle() {
-    isDark.value = !isDark.value
-    localStorage.setItem(STORAGE_KEY, isDark.value ? 'dark' : 'light')
-    applyClass(isDark.value)
+  function setTheme(next: Theme): void {
+    theme.value = next
+    localStorage.setItem(STORAGE_KEY, next)
+    applyTheme(next)
   }
-
-  return { isDark, toggle }
+  return { theme, setTheme }
 }
