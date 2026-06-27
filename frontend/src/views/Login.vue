@@ -2,10 +2,7 @@
   <div class="login-page">
     <div class="login-card">
       <h1 class="title">混凝土课程设计计算平台</h1>
-      <el-tabs v-model="mode" class="tabs">
-        <el-tab-pane label="登录" name="login" />
-        <el-tab-pane label="注册" name="register" />
-      </el-tabs>
+      <h2 class="subtitle">{{ mode === 'login' ? '登录' : '创建账户' }}</h2>
 
       <el-form
         ref="formRef"
@@ -27,6 +24,15 @@
           {{ mode === 'login' ? '登录' : '注册' }}
         </el-button>
       </el-form>
+
+      <div class="switch">
+        <span class="switch-text">
+          {{ mode === 'login' ? '没有账户？' : '已有账户？' }}
+        </span>
+        <a class="switch-link" @click="toggleMode">
+          {{ mode === 'login' ? '注册' : '登录' }}
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -80,6 +86,12 @@ const rules: FormRules = {
   ],
 }
 
+function toggleMode(): void {
+  mode.value = mode.value === 'login' ? 'register' : 'login'
+  form.confirm = ''
+  formRef.value?.clearValidate()
+}
+
 async function submit(): Promise<void> {
   if (!formRef.value) return
   try {
@@ -122,15 +134,38 @@ async function submit(): Promise<void> {
   border-radius: var(--radius);
 }
 .title {
-  margin: 0 0 16px;
+  margin: 0 0 4px;
   font-size: 18px;
   font-weight: 600;
   text-align: center;
 }
-.tabs {
-  margin-bottom: 8px;
+.subtitle {
+  margin: 0 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--muted-foreground);
 }
 .submit {
   width: 100%;
+}
+.switch {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.switch-text {
+  color: var(--muted-foreground);
+}
+.switch-link {
+  color: var(--primary);
+  cursor: pointer;
+  user-select: none;
+}
+.switch-link:hover {
+  text-decoration: underline;
 }
 </style>
