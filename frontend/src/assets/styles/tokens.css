@@ -109,6 +109,7 @@
   --el-color-success-light-7: color-mix(in srgb, var(--success) 30%, var(--card));
   --el-color-success-light-8: color-mix(in srgb, var(--success) 20%, var(--card));
   --el-color-success-light-9: color-mix(in srgb, var(--success) 10%, var(--card));
+  --el-color-success-dark-2: color-mix(in srgb, var(--success) 80%, #000);
 
   --el-color-warning: var(--warning);
   --el-color-warning-light-3: color-mix(in srgb, var(--warning) 70%, var(--card));
@@ -116,6 +117,7 @@
   --el-color-warning-light-7: color-mix(in srgb, var(--warning) 30%, var(--card));
   --el-color-warning-light-8: color-mix(in srgb, var(--warning) 20%, var(--card));
   --el-color-warning-light-9: color-mix(in srgb, var(--warning) 10%, var(--card));
+  --el-color-warning-dark-2: color-mix(in srgb, var(--warning) 80%, #000);
 
   --el-color-danger: var(--destructive);
   --el-color-error: var(--destructive);
@@ -124,11 +126,21 @@
   --el-color-danger-light-7: color-mix(in srgb, var(--destructive) 30%, var(--card));
   --el-color-danger-light-8: color-mix(in srgb, var(--destructive) 20%, var(--card));
   --el-color-danger-light-9: color-mix(in srgb, var(--destructive) 10%, var(--card));
+  --el-color-danger-dark-2: color-mix(in srgb, var(--destructive) 80%, #000);
   --el-color-error-light-3: color-mix(in srgb, var(--destructive) 70%, var(--card));
   --el-color-error-light-5: color-mix(in srgb, var(--destructive) 50%, var(--card));
   --el-color-error-light-7: color-mix(in srgb, var(--destructive) 30%, var(--card));
   --el-color-error-light-8: color-mix(in srgb, var(--destructive) 20%, var(--card));
   --el-color-error-light-9: color-mix(in srgb, var(--destructive) 10%, var(--card));
+
+  --el-color-info: var(--muted-foreground);
+  --el-color-info-light-3: color-mix(in srgb, var(--muted-foreground) 70%, var(--card));
+  --el-color-info-light-5: color-mix(in srgb, var(--muted-foreground) 50%, var(--card));
+  --el-color-info-light-7: color-mix(in srgb, var(--muted-foreground) 30%, var(--card));
+  --el-color-info-light-8: color-mix(in srgb, var(--muted-foreground) 20%, var(--card));
+  --el-color-info-light-9: color-mix(in srgb, var(--muted-foreground) 10%, var(--card));
+  --el-color-info-dark-2: color-mix(in srgb, var(--muted-foreground) 80%, #000);
+  --el-color-error-dark-2: color-mix(in srgb, var(--destructive) 80%, #000);
 
   /* 背景 / 填充 */
   --el-bg-color: var(--card);
