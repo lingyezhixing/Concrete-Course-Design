@@ -1,7 +1,7 @@
 <template>
-  <UnderConstruction title="计算书" />
+  <PageHeader title="计算书" subtitle="自动生成设计计算书（待实现）" />
 </template>
 
 <script setup lang="ts">
-import UnderConstruction from '../components/common/UnderConstruction.vue'
+import PageHeader from '../components/common/PageHeader.vue'
 </script>

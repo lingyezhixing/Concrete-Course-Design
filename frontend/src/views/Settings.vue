@@ -1,7 +1,7 @@
 <template>
-  <UnderConstruction title="系统设置" />
+  <PageHeader title="系统设置" subtitle="系统与主题偏好（待实现）" />
 </template>
 
 <script setup lang="ts">
-import UnderConstruction from '../components/common/UnderConstruction.vue'
+import PageHeader from '../components/common/PageHeader.vue'
 </script>

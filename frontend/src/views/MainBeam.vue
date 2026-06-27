@@ -1,7 +1,7 @@
 <template>
-  <UnderConstruction title="主梁计算" />
+  <PageHeader title="主梁计算" subtitle="主梁内力与配筋（待实现）" />
 </template>
 
 <script setup lang="ts">
-import UnderConstruction from '../components/common/UnderConstruction.vue'
+import PageHeader from '../components/common/PageHeader.vue'
 </script>
