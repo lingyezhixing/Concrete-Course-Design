@@ -40,5 +40,8 @@ frontend/dist/
 # TypeScript build info
 *.tsbuildinfo
 
+# Docker Compose (copy from .example for local setup)
+docker-compose.yml
+
 # Local helper scripts
 start-backend.bat
