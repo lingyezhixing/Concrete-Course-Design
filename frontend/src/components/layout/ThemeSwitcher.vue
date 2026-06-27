@@ -1,11 +1,12 @@
 <template>
-  <div class="theme-switcher">
+  <div class="theme-switcher" role="group" aria-label="主题">
     <button
       v-for="opt in OPTIONS"
       :key="opt.value"
       type="button"
       class="opt"
       :class="{ active: theme === opt.value }"
+      :aria-pressed="theme === opt.value"
       :title="opt.label"
       @click="setTheme(opt.value)"
     >
@@ -49,6 +50,10 @@ const { theme, setTheme } = useTheme()
 .opt.active {
   background: var(--primary);
   border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.opt.active:hover {
+  background: var(--primary);
   color: var(--primary-foreground);
 }
 </style>
