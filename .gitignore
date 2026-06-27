@@ -52,3 +52,6 @@ data/
 # Backend logs (rotating, per-startup timestamped files)
 backend/logs/
 logs/
+
+# Superpowers docs (AI workflow artifacts, not project docs)
+docs/superpowers/
