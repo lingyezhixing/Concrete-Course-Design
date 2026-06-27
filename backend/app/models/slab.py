@@ -34,7 +34,6 @@ class SlabInput(BaseModel):
     # 分项系数
     dead_load_factor: float = Field(default=1.05, description="恒载分项系数")
     live_load_factor: float = Field(default=1.2, description="活载分项系数")
-    structure_factor: float = Field(default=1.2, description="结构系数")
 
 
 class SlabLoadOutput(BaseModel):
