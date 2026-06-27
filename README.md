@@ -19,7 +19,7 @@
 
 ```bash
 cd backend
-pip install -r requirements.txt
+pip install -e ".[dev]"
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -74,7 +74,8 @@ docker compose up -d
 │   │       └── connection.py   # 数据库连接引擎
 │   ├── tests/
 │   ├── Dockerfile
-│   └── requirements.txt
+│   ├── pyproject.toml        # 项目管理 + pytest 配置
+│   └── Dockerfile
 ├── frontend/                   # Vue 3 + Element Plus 前端
 │   ├── src/
 │   │   ├── main.ts             # 入口：Element Plus + 主题注入
@@ -102,7 +103,7 @@ docker compose up -d
 
 ```bash
 # 安装依赖
-cd backend && pip install -r requirements.txt
+cd backend && pip install -e ".[dev]"
 cd frontend && npm install
 
 # 运行测试
