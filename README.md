@@ -29,6 +29,15 @@ npm run dev
 
 测试: `npm run test:run`
 
+### Docker（一键启动）
+
+```bash
+cp docker-compose.yml.example docker-compose.yml
+docker compose up -d
+```
+
+前端: http://localhost:8000
+
 ## 项目结构
 
 ```

@@ -1,45 +1,22 @@
-# =============================================================================
-# 混凝土课程设计计算平台 — Docker Compose 通用配置
-# =============================================================================
-#
-# 使用方法:
-#   1. 复制为 docker-compose.yml :  cp docker-compose.yml.example docker-compose.yml
-#   2. 按需修改端口映射（默认前端 33018）
-#   3. 启动:                    docker compose up -d
-#
-# 如果你的环境已有自定义外部网络（如 tools-net），请将下方 networks 段
-# 替换为 external 引用，参考示例末尾的注释。
-# =============================================================================
-
 services:
   backend:
     container_name: concrete-backend
     build: ./backend
     restart: always
     networks:
-      - app-net
+      - concrete-net
 
   frontend:
     container_name: concrete-frontend
     build: ./frontend
     restart: always
     ports:
-      - "33018:80"
+      - "8000:80"
     depends_on:
       - backend
     networks:
-      - app-net
+      - concrete-net
 
 networks:
-  app-net:
+  concrete-net:
     driver: bridge
-
-# =============================================================================
-# 如果你的环境使用预创建的外部网络，请将上方 networks 段替换为:
-#
-# networks:
-#   tools-net:
-#     external: true
-#
-# 同时将每个 service 的 networks 改为 tools-net。
-# =============================================================================
