@@ -1,7 +1,0 @@
-/* 主色覆盖：亮色用靛蓝，暗色用浅蓝（参考 LLM-Manager 配色） */
-:root {
-  --el-color-primary: #4f46e5;
-}
-html.dark {
-  --el-color-primary: #6b8cff;
-}
