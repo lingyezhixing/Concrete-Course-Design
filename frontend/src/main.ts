@@ -4,11 +4,10 @@ import 'element-plus/dist/index.css'
 import './assets/styles/tokens.css'
 import App from './App.vue'
 import router from './router'
+import { useAuth } from './composables/useAuth'
 
-// 挂载前应用初始主题，避免刷新闪烁
-const storedTheme = localStorage.getItem('ccd-theme')
-const theme = storedTheme === 'light' || storedTheme === 'warm' ? storedTheme : 'dark'
-document.documentElement.dataset.theme = theme
+// 恢复登录态并按当前用户载入主题/侧栏偏好（useTheme 在导入时已应用全局主题）
+void useAuth().bootstrap()
 
 const app = createApp(App)
 app.use(ElementPlus)
