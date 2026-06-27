@@ -1,8 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AppLayout from '../components/layout/AppLayout.vue'
+import { useAuth } from '../composables/useAuth'
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/Login.vue'),
+    meta: { public: true },
+  },
   {
     path: '/',
     component: AppLayout,
@@ -22,6 +29,17 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+router.beforeEach((to) => {
+  const { isAuthenticated } = useAuth()
+  if (!to.meta.public && !isAuthenticated.value) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.name === 'login' && isAuthenticated.value) {
+    return { path: '/' }
+  }
+  return true
 })
 
 export default router
