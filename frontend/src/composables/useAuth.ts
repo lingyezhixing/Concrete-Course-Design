@@ -42,10 +42,9 @@ export function useAuth() {
     return res.user
   }
 
-  async function register(username: string, password: string): Promise<UserPublic> {
-    const res = await apiRegister(username, password)
-    applySession(res)
-    return res.user
+  async function register(username: string, password: string): Promise<void> {
+    // 仅创建账户，不自动登录 —— 注册后引导用户去登录页登录
+    await apiRegister(username, password)
   }
 
   function logout(): void {

@@ -49,7 +49,7 @@ describe('useAuth', () => {
     expect(loadSidebarFor).toHaveBeenCalledWith('7')
   })
 
-  it('register also establishes a session', async () => {
+  it('register creates account but does NOT establish session', async () => {
     register.mockResolvedValue({
       access_token: 'tok2',
       token_type: 'bearer',
@@ -57,10 +57,11 @@ describe('useAuth', () => {
       user: { id: 8, username: 'bob', created_at: 'now' },
     })
     const { useAuth } = await import('./useAuth')
-    const { register: doRegister, isAuthenticated } = useAuth()
+    const { register: doRegister, isAuthenticated, token } = useAuth()
     await doRegister('bob', 'secret1')
-    expect(isAuthenticated.value).toBe(true)
-    expect(localStorage.getItem('ccd-token')).toBe('tok2')
+    expect(isAuthenticated.value).toBe(false)
+    expect(token.value).toBeNull()
+    expect(loadThemeFor).not.toHaveBeenCalled()
   })
 
   it('logout clears state and reverts prefs to global', async () => {
