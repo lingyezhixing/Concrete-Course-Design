@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { get } = vi.hoisted(() => ({ get: vi.fn() }))
-vi.mock('axios', () => ({ default: { create: () => ({ get }) } }))
+vi.mock('axios', () => ({
+  default: {
+    create: () => ({
+      get,
+      interceptors: {
+        request: { use: vi.fn() },
+        response: { use: vi.fn() },
+      },
+    }),
+  },
+}))
 
 import { getHealth } from './index'
 
