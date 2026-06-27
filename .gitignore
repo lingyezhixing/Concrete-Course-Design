@@ -36,3 +36,9 @@ build/
 # Node modules
 frontend/node_modules/
 frontend/dist/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Local helper scripts
+start-backend.bat
