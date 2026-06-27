@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { NAV_ITEMS } from './nav'
 
 describe('nav config', () => {
-  it('has 8 items', () => {
-    expect(NAV_ITEMS).toHaveLength(8)
+  it('has 7 items', () => {
+    expect(NAV_ITEMS).toHaveLength(7)
   })
 
   it('every item has path, title, and icon', () => {
@@ -13,7 +13,6 @@ describe('nav config', () => {
       expect(typeof item.title).toBe('string')
       expect(item.title.length).toBeGreaterThan(0)
       expect(item.icon).toBeTruthy()
-      expect(typeof item.underConstruction).toBe('boolean')
     }
   })
 
@@ -24,5 +23,9 @@ describe('nav config', () => {
 
   it('contains overview at "/"', () => {
     expect(NAV_ITEMS.some((i) => i.path === '/')).toBe(true)
+  })
+
+  it('does not contain column', () => {
+    expect(NAV_ITEMS.some((i) => i.path === '/column')).toBe(false)
   })
 })
