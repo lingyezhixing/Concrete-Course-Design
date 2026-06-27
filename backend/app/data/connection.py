@@ -15,6 +15,17 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db():
-    """初始化数据库 — 待各模块建表时补充"""
+    """初始化数据库 — 建表。"""
     conn = get_connection()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """
+    )
+    conn.commit()
     conn.close()
