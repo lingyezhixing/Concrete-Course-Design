@@ -14,7 +14,7 @@
         :title="collapsed ? '展开侧栏' : '收起侧栏'"
         @click="emit('toggle')"
       >
-        <el-icon :size="16"><component :is="collapsed ? Expand : Fold" /></el-icon>
+        <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="16" />
       </button>
     </div>
     <div class="right">
@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { Fold, Expand } from '@element-plus/icons-vue'
+import { PanelLeftClose, PanelLeftOpen } from '@lucide/vue'
 import { useHealth } from '../../composables/useHealth'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 

@@ -11,7 +11,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@element-plus/icons-vue": "^2.3.2",
+    "@lucide/vue": "^1.21.0",
     "axios": "^1.7.0",
     "element-plus": "^2.9.0",
     "vue": "^3.5.0",

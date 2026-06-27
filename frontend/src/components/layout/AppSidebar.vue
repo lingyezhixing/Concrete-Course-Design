@@ -9,7 +9,7 @@
         :class="{ collapsed }"
         :title="collapsed ? item.title : undefined"
       >
-        <el-icon class="nav-icon"><component :is="item.icon" /></el-icon>
+        <component :is="item.icon" class="nav-icon" :size="16" />
         <span v-if="!collapsed" class="nav-label">{{ item.title }}</span>
       </router-link>
     </nav>
@@ -74,7 +74,6 @@ defineProps<{ collapsed: boolean }>()
 }
 .nav-icon {
   flex-shrink: 0;
-  font-size: 16px;
 }
 .nav-label {
   white-space: nowrap;
