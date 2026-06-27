@@ -18,7 +18,7 @@
       </button>
     </div>
     <div class="right">
-      <ThemeSwitcher />
+      <UserDropdown />
     </div>
   </header>
 </template>
@@ -27,7 +27,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { PanelLeftClose, PanelLeftOpen } from '@lucide/vue'
 import { useHealth } from '../../composables/useHealth'
-import ThemeSwitcher from './ThemeSwitcher.vue'
+import UserDropdown from './UserDropdown.vue'
 
 defineProps<{ collapsed: boolean }>()
 const emit = defineEmits<{ toggle: [] }>()
