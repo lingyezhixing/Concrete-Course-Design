@@ -55,4 +55,30 @@ describe('useTheme', () => {
     a.setTheme('light')
     expect(b.theme.value).toBe('light')
   })
+
+  it('loadThemeFor(userId) reads from user-scoped key', async () => {
+    localStorage.setItem('ccd-theme:7', 'warm')
+    const { useTheme } = await import('./useTheme')
+    const { theme, loadThemeFor } = useTheme()
+    loadThemeFor('7')
+    expect(theme.value).toBe('warm')
+  })
+
+  it('setTheme after loadThemeFor writes user-scoped key', async () => {
+    const { useTheme } = await import('./useTheme')
+    const { setTheme, loadThemeFor } = useTheme()
+    loadThemeFor('7')
+    setTheme('light')
+    expect(localStorage.getItem('ccd-theme:7')).toBe('light')
+    expect(localStorage.getItem('ccd-theme')).toBeNull()
+  })
+
+  it('loadThemeFor(null) falls back to global key', async () => {
+    localStorage.setItem('ccd-theme', 'light')
+    const { useTheme } = await import('./useTheme')
+    const { theme, loadThemeFor } = useTheme()
+    loadThemeFor('7') // 切到用户键（无值→默认 dark）
+    loadThemeFor(null)
+    expect(theme.value).toBe('light')
+  })
 })

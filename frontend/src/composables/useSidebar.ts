@@ -1,14 +1,29 @@
 import { ref } from 'vue'
 
-const STORAGE_KEY = 'ccd-sidebar'
+const GLOBAL_KEY = 'ccd-sidebar'
+
+// 当前作用域键：登录后为 ccd-sidebar:<userId>，未登录为全局
+let currentKey = GLOBAL_KEY
+
+const isCollapsed = ref(localStorage.getItem(currentKey) === 'collapsed')
 
 export function useSidebar() {
-  const isCollapsed = ref(localStorage.getItem(STORAGE_KEY) === 'collapsed')
-
-  function toggle() {
-    isCollapsed.value = !isCollapsed.value
-    localStorage.setItem(STORAGE_KEY, isCollapsed.value ? 'collapsed' : 'expanded')
+  function persist(): void {
+    localStorage.setItem(
+      currentKey,
+      isCollapsed.value ? 'collapsed' : 'expanded',
+    )
   }
 
-  return { isCollapsed, toggle }
+  function toggle(): void {
+    isCollapsed.value = !isCollapsed.value
+    persist()
+  }
+
+  function loadSidebarFor(userId: string | null): void {
+    currentKey = userId ? `${GLOBAL_KEY}:${userId}` : GLOBAL_KEY
+    isCollapsed.value = localStorage.getItem(currentKey) === 'collapsed'
+  }
+
+  return { isCollapsed, toggle, loadSidebarFor }
 }
