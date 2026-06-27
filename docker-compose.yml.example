@@ -3,6 +3,8 @@ services:
     container_name: concrete-backend
     build: ./backend
     restart: always
+    volumes:
+      - ./data:/app/data
     networks:
       - concrete-net
 
