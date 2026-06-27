@@ -21,9 +21,8 @@ class SlabInput(BaseModel):
     length: float = Field(description="板的长度 (m)")
     width: float = Field(description="板的宽度 (m)")
     thickness: float = Field(description="板的厚度 (mm)")
-    wall_thickness: float = Field(description="墙体厚度 (mm)")
     support_width: float = Field(description="支座宽度 / 次梁宽度 (mm)")
-    spans: int = Field(description="跨数 (2 ~ 5)")
+    spans: int = Field(description="跨数 (≥ 2，> 5 时按 5 跨查系数)")
 
     # 荷载参数
     reinforced_concrete_weight: float = Field(description="钢筋混凝土重度 (kN/m³)")

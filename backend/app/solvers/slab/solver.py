@@ -128,59 +128,89 @@ def calculate_internal_forces(
     M = α·g·l0² + α1·q·l0²   (弯矩，用计算跨度 l0)
     V = β·g·ln + β1·q·ln     (剪力，用净跨度 ln)
 
-    最终乘以结构系数。
+    系数查表仅支持 2 ~ 5 跨。当实际跨数 > 5 时，按 5 跨查表，
+    保留左边两跨和右边两跨的系数，中间所有跨使用相同的中间跨系数。
     """
     g = converted.converted_dead
     q = converted.converted_live
-    coeffs = get_slab_coefficients(inp.spans)
     n = inp.spans
-    gamma = inp.structure_factor
+    effective_spans = min(n, 5)
+    coeffs = get_slab_coefficients(effective_spans)
+
+    def _map_span_table(actual_idx: int) -> int:
+        if n <= 5:
+            return actual_idx * 2
+        if actual_idx == 0:
+            return 0
+        if actual_idx == 1:
+            return 2
+        if actual_idx == n - 2:
+            return 6
+        if actual_idx == n - 1:
+            return 8
+        return 4
+
+    def _map_support_table(actual_idx: int) -> int:
+        if n <= 5:
+            return actual_idx * 2 + 1
+        if actual_idx == 0:
+            return 1
+        if actual_idx == 1:
+            return 3
+        if actual_idx == n - 2:
+            return 7
+        return 5
 
     # ---- 弯矩 ----
     moments: list[SlabMomentResult] = []
-    for i, (alpha, alpha1) in enumerate(zip(coeffs.moments, coeffs.moment_alpha1)):
-        # 偶数索引是跨中，奇数索引是支座
-        if i % 2 == 0:
-            # 跨中 → 对应跨的序号为 i // 2
-            span_idx = i // 2
-            name = f"M{span_idx + 1}"
+    for pos in range(2 * n - 1):
+        if pos % 2 == 0:
+            span_idx = pos // 2
+            ti = _map_span_table(span_idx)
+            alpha = coeffs.moments[ti]
+            alpha1 = coeffs.moment_alpha1[ti]
+            st = _span_type_for_index(span_idx, n)
+            l0 = spans.edge_span if st == "edge" else spans.middle_span
+            value = alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2
+            moments.append(SlabMomentResult(name=f"M{span_idx + 1}", value=round(value, 4)))
         else:
-            # 支座 → 序号为 (i - 1) // 2，字母从 B 开始
-            support_idx = (i - 1) // 2
-            name = f"M_{chr(ord('A') + support_idx + 1)}"
-
-        span_idx_for_l0 = i // 2
-        st = _span_type_for_index(span_idx_for_l0, n)
-        l0 = spans.edge_span if st == "edge" else spans.middle_span
-
-        value = gamma * (alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2)
-        moments.append(SlabMomentResult(name=name, value=round(value, 4)))
+            support_idx = (pos - 1) // 2
+            ti = _map_support_table(support_idx)
+            alpha = coeffs.moments[ti]
+            alpha1 = coeffs.moment_alpha1[ti]
+            l0 = spans.middle_span
+            value = alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2
+            letter = chr(ord('A') + support_idx + 1)
+            moments.append(SlabMomentResult(name=f"M_{letter}", value=round(value, 4)))
 
     # ---- 剪力 ----
     shears: list[SlabShearResult] = []
-    for i, (beta, beta1) in enumerate(zip(coeffs.shears, coeffs.shear_beta1)):
-        # 剪力索引 i 对应的跨：i // 2
-        span_idx = i // 2
-        st = _span_type_for_index(span_idx, n)
-        ln = net_spans.edge_net if st == "edge" else net_spans.middle_net
-
-        # 命名
-        if i == 0:
+    for pos in range(2 * n):
+        span_idx = pos // 2
+        if pos == 0:
+            ti = 0
             name = "V_A"
-        elif i == 2 * n - 1:
+        elif pos == 2 * n - 1:
+            ti = 2 * effective_spans - 1
             name = f"V_{chr(ord('A') + n)}"
-        elif i % 2 == 1:
-            # 奇数 → 支座左侧，support_idx = i // 2
-            support_idx = i // 2
+        elif pos % 2 == 1:
+            support_idx = pos // 2
+            ti = _map_support_table(support_idx)
             letter = chr(ord('A') + support_idx + 1)
             name = f"Vl_{letter}"
         else:
-            # 偶数 → 支座右侧，support_idx = i // 2 - 1
-            support_idx = i // 2 - 1
+            support_idx = pos // 2 - 1
+            ti = _map_support_table(support_idx) + 1
             letter = chr(ord('A') + support_idx + 1)
             name = f"Vr_{letter}"
 
-        value = gamma * (beta * g * ln + beta1 * q * ln)
+        if pos == 0 or pos == 2 * n - 1:
+            ln = net_spans.edge_net
+        else:
+            ln = net_spans.middle_net
+        beta = coeffs.shears[ti]
+        beta1 = coeffs.shear_beta1[ti]
+        value = beta * g * ln + beta1 * q * ln
         shears.append(SlabShearResult(name=name, value=round(value, 4)))
 
     return SlabInternalForceOutput(moments=moments, shears=shears)
