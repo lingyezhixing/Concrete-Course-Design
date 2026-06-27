@@ -1,17 +1,13 @@
 <template>
-  <el-container class="app-layout">
-    <el-header class="app-header">
-      <AppHeader :collapsed="isCollapsed" @toggle="toggle" />
-    </el-header>
-    <el-container>
-      <el-aside :width="isCollapsed ? '64px' : '210px'" class="app-aside">
-        <AppSidebar :collapsed="isCollapsed" />
-      </el-aside>
-      <el-main class="app-main">
+  <div class="app-layout">
+    <AppHeader :collapsed="isCollapsed" @toggle="toggle" />
+    <div class="app-body">
+      <AppSidebar :collapsed="isCollapsed" />
+      <main class="app-main">
         <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+      </main>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -24,21 +20,22 @@ const { isCollapsed, toggle } = useSidebar()
 
 <style scoped>
 .app-layout {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
 }
-.app-header {
-  padding: 0;
-  height: 56px;
-  border-bottom: 1px solid var(--el-border-color);
-}
-.app-aside {
-  border-right: 1px solid var(--el-border-color);
-  transition: width 0.2s;
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 .app-main {
-  padding: 0;
-  background: var(--el-bg-color-page);
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
+  padding: 24px;
 }
 </style>
