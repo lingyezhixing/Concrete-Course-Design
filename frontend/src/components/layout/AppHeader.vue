@@ -1,32 +1,37 @@
 <template>
-  <div class="header">
-    <div class="header-left">
-      <el-icon class="header-btn" :size="20" @click="emit('toggle')">
-        <component :is="collapsed ? Expand : Fold" />
-      </el-icon>
-      <span class="title">混凝土课程设计计算平台</span>
+  <header class="topbar">
+    <div class="left">
+      <span class="brand" :title="isOnline ? '后端已连接' : '后端连接中断'">
+        <span class="led" :class="isOnline ? 'on' : 'off'">
+          <span v-if="isOnline" class="led-dot" />
+        </span>
+        <span class="brand-text">混凝土课程设计计算平台</span>
+      </span>
+      <button
+        type="button"
+        class="collapse-btn"
+        :aria-label="collapsed ? '展开侧栏' : '收起侧栏'"
+        :title="collapsed ? '展开侧栏' : '收起侧栏'"
+        @click="emit('toggle')"
+      >
+        <el-icon :size="16"><component :is="collapsed ? Expand : Fold" /></el-icon>
+      </button>
     </div>
-    <div class="header-right">
-      <el-tooltip :content="isOnline ? '后端在线' : '后端离线'" placement="bottom">
-        <span class="health-dot" :class="{ online: isOnline }" />
-      </el-tooltip>
-      <el-icon class="header-btn" :size="20" @click="toggleTheme">
-        <component :is="isDark ? Moon : Sunny" />
-      </el-icon>
+    <div class="right">
+      <ThemeSwitcher />
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { Fold, Expand, Moon, Sunny } from '@element-plus/icons-vue'
-import { useTheme } from '../../composables/useTheme'
+import { Fold, Expand } from '@element-plus/icons-vue'
 import { useHealth } from '../../composables/useHealth'
+import ThemeSwitcher from './ThemeSwitcher.vue'
 
 defineProps<{ collapsed: boolean }>()
 const emit = defineEmits<{ toggle: [] }>()
 
-const { isDark, toggle: toggleTheme } = useTheme()
 const { isOnline, start, stop } = useHealth()
 
 onMounted(start)
@@ -34,39 +39,70 @@ onUnmounted(stop)
 </script>
 
 <style scoped>
-.header {
+.topbar {
+  flex-shrink: 0;
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
 }
-.header-left {
+.left,
+.right {
   display: flex;
   align-items: center;
-  gap: 12px;
 }
-.header-right {
-  display: flex;
+.left {
+  gap: 4px;
+}
+.brand {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
+  padding: 0 4px;
+  color: var(--foreground);
 }
-.header-btn {
-  cursor: pointer;
-  color: var(--el-text-color-regular);
-}
-.title {
-  font-size: 16px;
+.brand-text {
+  font-size: 15px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  letter-spacing: -0.01em;
 }
-.health-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--el-text-color-disabled);
+.led {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--success);
+  border-radius: 2px;
 }
-.health-dot.online {
-  background: var(--el-color-success);
+.led.off {
+  border-color: var(--destructive);
+}
+.led-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--success);
+}
+.collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.collapse-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
 }
 </style>
