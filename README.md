@@ -27,18 +27,24 @@ npm run dev
 
 前端地址: http://localhost:3000
 
+测试: `npm run test:run`
+
 ## 项目结构
 
 ```
 ├── backend/           # FastAPI 后端
 │   ├── app/
-│   │   ├── main.py    # 应用入口
+│   │   ├── main.py    # 应用入口（/api/health）
 │   │   └── calc/      # 计算模块（纯函数）
 │   └── requirements.txt
-├── frontend/          # Vue 3 前端
+├── frontend/          # Vue 3 + Element Plus 前端
 │   └── src/
-│       ├── api/       # API 请求
-│       ├── views/     # 页面
-│       └── router/    # 路由
+│       ├── api/           # axios 请求
+│       ├── assets/styles/ # 全局样式与主题
+│       ├── components/    # layout（外壳）/ common（通用）
+│       ├── composables/   # useTheme/useSidebar/useHealth
+│       ├── config/        # nav 导航配置
+│       ├── router/        # 路由
+│       └── views/         # 各模块页面
 └── README.md
 ```
