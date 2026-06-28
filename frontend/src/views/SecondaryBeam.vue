@@ -1,6 +1,6 @@
 <template>
   <div class="beam">
-    <PageHeader title="次梁计算" subtitle="内力与配筋">
+    <PageHeader title="次梁计算" subtitle="内力分析与配筋设计">
       <template #action>
         <span class="save-state">{{ saving ? '自动保存中…' : '已保存' }}</span>
       </template>

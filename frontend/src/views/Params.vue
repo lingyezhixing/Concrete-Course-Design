@@ -1,6 +1,6 @@
 <template>
   <div class="params">
-    <PageHeader title="参数" subtitle="结构 / 材料 / 荷载 — 确认后一键全链计算" />
+    <PageHeader title="设计参数" subtitle="结构、材料与荷载参数配置" />
 
     <!-- 守卫：无活动项目 -->
     <section v-if="!isActive()" class="block guard">

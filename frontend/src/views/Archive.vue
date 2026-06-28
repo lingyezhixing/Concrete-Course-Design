@@ -1,6 +1,6 @@
 <template>
   <div class="archive">
-    <PageHeader title="存档与历史" subtitle="快照 · 恢复 · fork · 管理">
+    <PageHeader title="存档管理" subtitle="快照保存、恢复与派生">
       <template #action>
         <el-button type="primary" :disabled="!isActive()" @click="archiveCurrent">生成当前快照</el-button>
       </template>

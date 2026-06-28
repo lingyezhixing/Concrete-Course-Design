@@ -1,6 +1,6 @@
 <template>
   <div class="settings">
-    <PageHeader title="系统设置" subtitle="主题与账户偏好" />
+    <PageHeader title="系统设置" subtitle="主题外观与账户管理" />
 
     <section class="block">
       <h2 class="block-title">主题外观</h2>

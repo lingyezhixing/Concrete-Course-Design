@@ -1,8 +1,8 @@
 <template>
   <div class="overview">
     <PageHeader
-      title="开始"
-      :subtitle="currentUser ? `${currentUser.username} 的设计工作台` : '设计工作台'"
+      title="工作台"
+      :subtitle="currentUser ? `${currentUser.username} 的项目概览` : '项目概览'"
     />
 
     <!-- 所有项目 -->
