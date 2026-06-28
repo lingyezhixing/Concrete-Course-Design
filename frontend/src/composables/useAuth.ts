@@ -1,6 +1,11 @@
 import { computed, ref } from 'vue'
 
-import { fetchMe, login as apiLogin, register as apiRegister } from '../api/auth'
+import {
+  deleteAccount as apiDeleteAccount,
+  fetchMe,
+  login as apiLogin,
+  register as apiRegister,
+} from '../api/auth'
 import type { TokenResponse, UserPublic } from '../api/auth'
 import { useSidebar } from './useSidebar'
 import { useTheme } from './useTheme'
@@ -56,6 +61,22 @@ export function useAuth() {
     useSidebar().loadSidebarFor(null)
   }
 
+  async function deleteAccount(): Promise<void> {
+    const uid = currentUser.value ? String(currentUser.value.id) : null
+    await apiDeleteAccount()
+    // 清除会话 + 该用户的全部本地数据（含按用户分键的主题/侧栏）
+    token.value = null
+    currentUser.value = null
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    if (uid) {
+      localStorage.removeItem(`ccd-theme:${uid}`)
+      localStorage.removeItem(`ccd-sidebar:${uid}`)
+    }
+    useTheme().loadThemeFor(null)
+    useSidebar().loadSidebarFor(null)
+  }
+
   async function bootstrap(): Promise<void> {
     // 1) 同步恢复缓存（立即按用户键载入偏好，避免闪烁）
     const cached = readCachedUser()
@@ -77,5 +98,14 @@ export function useAuth() {
     }
   }
 
-  return { token, currentUser, isAuthenticated, login, register, logout, bootstrap }
+  return {
+    token,
+    currentUser,
+    isAuthenticated,
+    login,
+    register,
+    logout,
+    deleteAccount,
+    bootstrap,
+  }
 }

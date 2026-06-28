@@ -52,3 +52,15 @@ def get_by_id(user_id: int):
     ).fetchone()
     conn.close()
     return row
+
+
+def delete_user(user_id: int) -> None:
+    """注销账户：删除当前用户行。
+
+    未来新增的按用户隔离的数据表（如计算记录）应在此处一并按 user_id 删除，
+    或在表上声明 ``FOREIGN KEY ... ON DELETE CASCADE``。
+    """
+    conn = get_connection()
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()

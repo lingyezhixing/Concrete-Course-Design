@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.dependencies import get_current_user
-from app.auth.repository import UsernameAlreadyExists, create_user, get_by_username
+from app.auth.repository import UsernameAlreadyExists, create_user, delete_user, get_by_username
 from app.config import TOKEN_EXPIRE_DAYS
 from app.models.user import Token, UserCreate, UserLogin, UserPublic
 from app.security import create_access_token, verify_password
@@ -52,3 +52,9 @@ def login(payload: UserLogin) -> Token:
 @router.get("/me", response_model=UserPublic)
 def me(current_user: dict = Depends(get_current_user)) -> UserPublic:
     return UserPublic(**current_user)
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(current_user: dict = Depends(get_current_user)) -> None:
+    """注销账户：删除当前用户（及未来全部按用户隔离的数据）。"""
+    delete_user(current_user["id"])

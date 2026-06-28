@@ -39,3 +39,7 @@ export async function fetchMe(): Promise<UserPublic> {
   const { data } = await api.get<UserPublic>('/auth/me')
   return data
 }
+
+export async function deleteAccount(): Promise<void> {
+  await api.delete('/auth/account')
+}

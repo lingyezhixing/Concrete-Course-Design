@@ -207,3 +207,21 @@ class TestAuthRoutes:
             "/api/auth/me", headers={"Authorization": "Bearer not.a.jwt"}
         )
         assert res.status_code == 401
+
+    def test_delete_account(self, client):
+        reg = client.post(
+            "/api/auth/register", json={"username": "del", "password": "secret1"}
+        ).json()
+        token = reg["access_token"]
+        res = client.delete(
+            "/api/auth/account", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert res.status_code == 204
+        # 账户已删除，原 token 立即失效
+        me = client.get(
+            "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert me.status_code == 401
+
+    def test_delete_account_requires_auth(self, client):
+        assert client.delete("/api/auth/account").status_code == 401

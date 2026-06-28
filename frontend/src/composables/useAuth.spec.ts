@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-const { login, register, fetchMe } = vi.hoisted(() => ({
+const { login, register, fetchMe, deleteAccount } = vi.hoisted(() => ({
   login: vi.fn(),
   register: vi.fn(),
   fetchMe: vi.fn(),
+  deleteAccount: vi.fn(),
 }))
-vi.mock('../api/auth', () => ({ login, register, fetchMe }))
+vi.mock('../api/auth', () => ({ login, register, fetchMe, deleteAccount }))
 
 const { loadThemeFor, loadSidebarFor } = vi.hoisted(() => ({
   loadThemeFor: vi.fn(),
@@ -21,6 +22,7 @@ describe('useAuth', () => {
     login.mockReset()
     register.mockReset()
     fetchMe.mockReset()
+    deleteAccount.mockReset()
     loadThemeFor.mockReset()
     loadSidebarFor.mockReset()
   })
@@ -77,6 +79,27 @@ describe('useAuth', () => {
     expect(localStorage.getItem('ccd-token')).toBeNull()
     expect(loadThemeFor).toHaveBeenLastCalledWith(null)
     expect(loadSidebarFor).toHaveBeenLastCalledWith(null)
+  })
+
+  it('deleteAccount wipes session and user-scoped prefs', async () => {
+    login.mockResolvedValue({
+      access_token: 'tok',
+      token_type: 'bearer',
+      expires_in: 604800,
+      user: { id: 7, username: 'alice', created_at: 'now' },
+    })
+    deleteAccount.mockResolvedValue(undefined)
+    const { useAuth } = await import('./useAuth')
+    const { login: doLogin, deleteAccount: doDelete, isAuthenticated } = useAuth()
+    await doLogin('alice', 'secret1')
+    localStorage.setItem('ccd-theme:7', 'light')
+    localStorage.setItem('ccd-sidebar:7', 'collapsed')
+    await doDelete()
+    expect(isAuthenticated.value).toBe(false)
+    expect(localStorage.getItem('ccd-token')).toBeNull()
+    expect(localStorage.getItem('ccd-theme:7')).toBeNull()
+    expect(localStorage.getItem('ccd-sidebar:7')).toBeNull()
+    expect(loadThemeFor).toHaveBeenLastCalledWith(null)
   })
 
   it('bootstrap with cached user restores session synchronously', async () => {
