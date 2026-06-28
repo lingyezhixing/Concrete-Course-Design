@@ -20,6 +20,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { ChevronDown } from '@lucide/vue'
 import { useAuth } from '../../composables/useAuth'
 import { useTheme, type Theme } from '../../composables/useTheme'
@@ -37,12 +38,21 @@ const { theme, setTheme } = useTheme()
 const username = computed(() => currentUser.value?.username ?? '')
 const initial = computed(() => username.value.charAt(0).toUpperCase() || '?')
 
-function onCommand(cmd: string): void {
+async function onCommand(cmd: string): Promise<void> {
   if (cmd.startsWith('theme:')) {
     setTheme(cmd.slice(6) as Theme)
   } else if (cmd === 'settings') {
     router.push('/settings')
   } else if (cmd === 'logout') {
+    try {
+      await ElMessageBox.confirm('确定要退出登录吗？', '退出登录', {
+        type: 'warning',
+        confirmButtonText: '退出',
+        cancelButtonText: '取消',
+      })
+    } catch {
+      return // 用户取消
+    }
     logout()
     router.replace('/login')
   }
