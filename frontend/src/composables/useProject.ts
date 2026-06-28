@@ -1,11 +1,10 @@
-import { reactive, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import * as projectsApi from '../api/projects'
 import type {
   CalcPage,
-  CheckItem,
+  ChecksResponse,
   ProjectData,
-  ProjectPublic,
   SnapshotPublic,
 } from '../api/projects'
 
@@ -13,7 +12,7 @@ import type {
 const projectId = ref<number | null>(null)
 const projectName = ref<string>('')
 const data = ref<ProjectData | null>(null)
-const checks = ref<Record<string, CheckItem[]>>({})
+const checks = ref<ChecksResponse>({ slab: [] })
 const loading = ref(false)
 const saving = ref(false)
 
@@ -59,7 +58,7 @@ async function openProject(id: number): Promise<void> {
     projectId.value = res.id
     projectName.value = res.name
     data.value = res.data
-    checks.value = {}
+    checks.value = { slab: [] }
   } finally {
     loading.value = false
   }
@@ -72,7 +71,7 @@ async function createAndOpen(name: string): Promise<void> {
     projectId.value = res.id
     projectName.value = res.name
     data.value = res.data
-    checks.value = {}
+    checks.value = { slab: [] }
   } finally {
     loading.value = false
   }
@@ -86,7 +85,7 @@ function closeProject(): void {
   projectId.value = null
   projectName.value = ''
   data.value = null
-  checks.value = {}
+  checks.value = { slab: [] }
 }
 
 /**
