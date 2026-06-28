@@ -11,6 +11,7 @@ __all__ = [
     "SlabMomentResult",
     "SlabShearResult",
     "SlabInternalForceOutput",
+    "SlabFullResult",
 ]
 
 
@@ -140,3 +141,14 @@ class SlabReinforcementOutput(BaseModel):
     """板配筋计算结果汇总"""
 
     sections: list[SectionReinforcement] = Field(description="各截面配筋结果")
+
+
+class SlabFullResult(BaseModel):
+    """板完整计算结果（编排函数聚合，供 API 返回）。"""
+
+    load: SlabLoadOutput
+    span: SlabSpanOutput
+    net_span: SlabNetSpanOutput
+    converted: SlabLoadConvertOutput
+    internal_forces: SlabInternalForceOutput
+    reinforcement: SlabReinforcementOutput

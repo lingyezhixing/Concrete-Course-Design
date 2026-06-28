@@ -10,6 +10,7 @@ from app.models.slab import (
     SlabShearResult,
     SlabInternalForceOutput,
     SlabReinforcementOutput,
+    SlabFullResult,
 )
 from app.solvers.common import get_continuous_beam_coefficients
 from app.solvers.slab.utils import calc_section_reinforcement
@@ -21,6 +22,7 @@ __all__ = [
     "convert_loads",
     "calculate_internal_forces",
     "calculate_slab_reinforcement",
+    "calculate_slab",
 ]
 
 
@@ -265,3 +267,42 @@ def calculate_slab_reinforcement(
         )
         sections.append(sec)
     return SlabReinforcementOutput(sections=sections)
+
+
+def calculate_slab(
+    inp: SlabInput,
+    fc: float,
+    fy: float,
+    gamma_d: float,
+    cover: float = 20.0,
+    bar_diameter: float = 10.0,
+) -> SlabFullResult:
+    """板完整计算编排：荷载 → 跨度 → 净跨 → 折算 → 内力 → 配筋。
+
+    不改各步骤核心逻辑，仅做串联 + 供应构造默认值（cover / bar_diameter）。
+    板按 1m 板带 (b=1000)、最小直径 8 配筋。
+    """
+    load = calculate_load(inp)
+    spans = calculate_spans(inp)
+    net_spans = calculate_net_spans(inp)
+    converted = convert_loads(load)
+    internal = calculate_internal_forces(inp, load, spans, net_spans, converted)
+
+    moments = [(m.name, m.value) for m in internal.moments]
+    reinforcement = calculate_slab_reinforcement(
+        moments=moments,
+        h=inp.thickness,
+        cover=cover,
+        bar_diameter=bar_diameter,
+        fc=fc,
+        fy=fy,
+        gamma_d=gamma_d,
+    )
+    return SlabFullResult(
+        load=load,
+        span=spans,
+        net_span=net_spans,
+        converted=converted,
+        internal_forces=internal,
+        reinforcement=reinforcement,
+    )
