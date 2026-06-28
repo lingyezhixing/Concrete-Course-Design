@@ -18,7 +18,6 @@
             <el-input-number
               v-model="data!.materials.fc"
               :precision="2"
-              :placeholder="9.6"
               controls-position="right"
             />
           </el-form-item>
@@ -26,7 +25,6 @@
             <el-input-number
               v-model="data!.materials.fy_slab"
               :precision="2"
-              :placeholder="270"
               controls-position="right"
             />
           </el-form-item>
@@ -34,7 +32,6 @@
             <el-input-number
               v-model="data!.materials.fy_beam"
               :precision="2"
-              :placeholder="300"
               controls-position="right"
             />
           </el-form-item>
@@ -43,7 +40,6 @@
               v-model="data!.materials.gamma_d"
               :precision="2"
               :step="0.1"
-              :placeholder="1.2"
               controls-position="right"
             />
           </el-form-item>
