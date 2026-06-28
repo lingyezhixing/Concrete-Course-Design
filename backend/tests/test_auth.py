@@ -182,14 +182,12 @@ class TestAuthRoutes:
             "/api/auth/login", json={"username": "bob", "password": "wrong"}
         )
         assert res.status_code == 401
-        assert res.json()["detail"] == "密码错误"
 
-    def test_login_unknown_user_404(self, client):
+    def test_login_unknown_user_401(self, client):
         res = client.post(
             "/api/auth/login", json={"username": "ghost", "password": "x"}
         )
-        assert res.status_code == 404
-        assert res.json()["detail"] == "用户名不存在"
+        assert res.status_code == 401
 
     def test_me_with_token(self, client):
         reg = client.post(

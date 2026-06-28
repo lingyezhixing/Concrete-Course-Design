@@ -36,13 +36,9 @@ def register(payload: UserCreate) -> Token:
 @router.post("/login", response_model=Token)
 def login(payload: UserLogin) -> Token:
     row = get_by_username(payload.username)
-    if row is None:
+    if row is None or not verify_password(payload.password, row["password_hash"]):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="用户名不存在"
-        )
-    if not verify_password(payload.password, row["password_hash"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="密码错误"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码错误"
         )
     return _issue_token(
         {
