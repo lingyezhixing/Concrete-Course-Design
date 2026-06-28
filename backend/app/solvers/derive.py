@@ -79,6 +79,7 @@ def derive_beam_input(s: StructureParams, l: LoadsParams) -> BeamInput:
         plaster_weight=l.plaster_weight,
         dead_load_factor=1.05,
         live_load_factor=1.20,
+        stirrup_diameter=s.beam_stirrup_diameter,
     )
 
 
@@ -123,4 +124,5 @@ def derive_main_beam_input(s: StructureParams, l: LoadsParams) -> MainBeamInput:
         live_load=live_load_force,
         dead_load_factor=1.05,
         live_load_factor=1.20,
+        stirrup_diameter=s.main_beam_stirrup_diameter,
     )

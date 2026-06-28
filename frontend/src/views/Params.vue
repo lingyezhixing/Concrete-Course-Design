@@ -53,6 +53,12 @@
             <el-input-number v-model="data!.structure.main_beam_spans" :min="2" :step="1" :precision="0" controls-position="right" />
             <span class="hint">{{ mainBeamSpanHint }}</span>
           </el-form-item>
+          <el-form-item label="次梁箍筋直径（mm）">
+            <el-input-number v-model="data!.structure.beam_stirrup_diameter" :min="1" :precision="0" controls-position="right" />
+          </el-form-item>
+          <el-form-item label="主梁箍筋直径（mm）">
+            <el-input-number v-model="data!.structure.main_beam_stirrup_diameter" :min="1" :precision="0" controls-position="right" />
+          </el-form-item>
         </el-form>
         <p class="derived muted">板单跨/次梁间距 = {{ fmt(derived.beamSpacing) }} m；次梁跨度 = {{ fmt(derived.beamSpan) }} m；主梁跨度 = {{ fmt(derived.mainBeamSpan) }} m</p>
       </section>

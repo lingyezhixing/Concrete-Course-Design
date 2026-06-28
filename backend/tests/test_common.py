@@ -109,10 +109,10 @@ class TestCalcShearDesign:
         """次梁: V=74.62, b=200, h=400, c=30, d=20, fc=9.6"""
         result = calc_shear_design(
             max_shear=74.62, b=200, h=400, cover=30, bar_diameter=20,
-            fc=9.6, gamma_d=1.2, stirrup_diameter=6, stirrup_legs=2, fyv=270,
+            ft=1.10, gamma_d=1.2, stirrup_diameter=6, stirrup_legs=2, fyv=270,
         )
         assert result.max_shear == pytest.approx(74.62, abs=0.01)
-        assert result.vc == pytest.approx(40.3, abs=0.5)
+        assert result.vc == pytest.approx(46.2, abs=0.5)
         assert result.asv_s > 0
         assert result.recommended_spacing > 0
         assert result.hanger_area == 0.0  # 次梁无吊筋
@@ -122,7 +122,7 @@ class TestCalcShearDesign:
         """主梁: 有吊筋时 hanger_area > 0"""
         result = calc_shear_design(
             max_shear=170.71, b=250, h=500, cover=30, bar_diameter=20,
-            fc=9.6, gamma_d=1.2, stirrup_diameter=10, stirrup_legs=2, fyv=270,
+            ft=1.10, gamma_d=1.2, stirrup_diameter=10, stirrup_legs=2, fyv=270,
             hanger_force=50.0,
         )
         assert result.max_shear == pytest.approx(170.71, abs=0.01)

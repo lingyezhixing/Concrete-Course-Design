@@ -13,6 +13,7 @@ vi.mock('../api/projects', () => {
       main_beam_width: null, main_beam_height: null,
       column_width: null,
       slab_spans: null, beam_spans: null, main_beam_spans: null,
+      beam_stirrup_diameter: null, main_beam_stirrup_diameter: null,
     },
     materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
     loads: {

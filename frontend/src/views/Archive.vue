@@ -53,7 +53,8 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="restore">恢复</el-dropdown-item>
                 <el-dropdown-item command="fork">Fork 副本</el-dropdown-item>
-                <el-dropdown-item command="delete" divided>删除快照</el-dropdown-item>
+                <el-dropdown-item command="rename" divided>重命名</el-dropdown-item>
+                <el-dropdown-item command="delete">删除快照</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -77,7 +78,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Ellipsis } from '@lucide/vue'
 import PageHeader from '../components/common/PageHeader.vue'
 import { useProject } from '../composables/useProject'
-import { patchProject } from '../api/projects'
+import { patchProject, renameSnapshot } from '../api/projects'
 import type { ProjectPublic, SnapshotPublic } from '../api/projects'
 
 const router = useRouter()
@@ -164,6 +165,20 @@ async function fork(pid: number, snap: SnapshotPublic): Promise<void> {
   }
 }
 
+async function renameSnap(pid: number, snap: SnapshotPublic): Promise<void> {
+  try {
+    const { value } = await ElMessageBox.prompt('新名称', '重命名快照', {
+      confirmButtonText: '保存', cancelButtonText: '取消',
+      inputValue: snap.name, inputPattern: /.+/, inputErrorMessage: '名称不能为空',
+    })
+    await renameSnapshot(pid, snap.id, value.trim())
+    ElMessage.success('已重命名')
+    await reload()
+  } catch {
+    /* 用户取消 */
+  }
+}
+
 async function removeSnapshot(snap: SnapshotPublic): Promise<void> {
   try {
     await ElMessageBox.confirm(`删除快照「${snap.name}」？`, '删除快照', {
@@ -219,6 +234,7 @@ function onProjectCmd(cmd: string, p: ProjectPublic): void {
 function onSnapCmd(cmd: string, pid: number, snap: SnapshotPublic): void {
   if (cmd === 'restore') void restore(pid, snap)
   else if (cmd === 'fork') void fork(pid, snap)
+  else if (cmd === 'rename') void renameSnap(pid, snap)
   else if (cmd === 'delete') void removeSnapshot(snap)
 }
 

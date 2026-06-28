@@ -126,8 +126,9 @@ def calculate(
     structure = StructureParams(**data["structure"])
     loads = LoadsParams(**data["loads"])
 
-    # 材料强度与分项系数固定值（C20 fc=9.6, I级 fy=270, II级 fy=300, γd=1.2）
+    # 材料强度与分项系数固定值（C20 fc=9.6, ft=1.10, I级 fy=270, II级 fy=300, γd=1.2）
     FC = 9.6
+    FT = 1.10
     FY_SLAB = 270
     FY_BEAM = 300
     GAMMA_D = 1.2
@@ -142,13 +143,13 @@ def calculate(
         elif payload.page == "beam":
             result = calculate_beam(
                 derive_beam_input(structure, loads),
-                fc=FC, fy=FY_BEAM, gamma_d=GAMMA_D,
+                fc=FC, ft=FT, fy=FY_BEAM, gamma_d=GAMMA_D,
             )
             typed = BeamFullResult
         else:  # main_beam
             result = calculate_main_beam(
                 derive_main_beam_input(structure, loads),
-                fc=FC, fy=FY_BEAM, gamma_d=GAMMA_D,
+                fc=FC, ft=FT, fy=FY_BEAM, gamma_d=GAMMA_D,
             )
             typed = MainBeamFullResult
     except ValueError as exc:

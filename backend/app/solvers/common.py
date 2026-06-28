@@ -196,7 +196,7 @@ def calc_shear_design(
     h: float,
     cover: float,
     bar_diameter: float,
-    fc: float,
+    ft: float,
     gamma_d: float,
     stirrup_diameter: int = 6,
     stirrup_legs: int = 2,
@@ -205,10 +205,9 @@ def calc_shear_design(
 ) -> ShearDesignResult:
     """计算梁斜截面箍筋（次梁、主梁共用）。
 
-    公式：
-      Vc = (1/γd) × 0.07 × fc × b × h₀      混凝土受剪
-      Vsv = V − Vc                            箍筋承剪
-      Asv/s = γd × Vsv / (1.25 × fyv × h₀)
+    公式（GB 50010-2010 式 6.3.4-2）：
+      Vc = 0.7 · ft · b · h₀                          混凝土受剪（N）
+      Asv/s = (γd · V − 0.7 · ft · b · h₀) / (fyv · h₀)    箍筋计算
       ρsv = Asv / (b × s)
 
     Args:
@@ -217,7 +216,7 @@ def calc_shear_design(
         h: 梁高 (mm)
         cover: 保护层 (mm)
         bar_diameter: 纵筋估计直径 (mm)
-        fc: 混凝土抗压强度 (N/mm²)
+        ft: 混凝土抗拉强度 (N/mm²)
         gamma_d: 结构系数
         stirrup_diameter: 箍筋直径 (mm)
         stirrup_legs: 箍筋肢数
@@ -227,14 +226,14 @@ def calc_shear_design(
     v = abs(max_shear)
     h0 = effective_depth(h, cover, bar_diameter)
 
-    vc = 0.07 * fc * b * h0 / gamma_d / 1000.0  # kN
+    vc = 0.7 * ft * b * h0 / gamma_d / 1000.0  # kN
     need_stirrups = v > vc
 
     asv = stirrup_legs * math.pi * stirrup_diameter**2 / 4.0
 
     if need_stirrups:
-        v_sv = v - vc
-        asv_s = gamma_d * v_sv * 1e3 / (1.25 * fyv * h0)
+        # Asv/s = (γd·V − 0.7·ft·b·h₀) / (fyv·h₀)   (GB 50010-2010 式 6.3.4-2)
+        asv_s = (gamma_d * v * 1e3 - 0.7 * ft * b * h0) / (fyv * h0)
         spacing = asv / asv_s if asv_s > 0 else 200
     else:
         asv_s = 0.0

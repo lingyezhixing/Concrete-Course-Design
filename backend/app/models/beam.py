@@ -43,6 +43,9 @@ class BeamInput(BaseModel):
     dead_load_factor: float = Field(default=1.05, description="恒载分项系数")
     live_load_factor: float = Field(default=1.2, description="活载分项系数")
 
+    # 构造参数
+    stirrup_diameter: int | None = Field(default=None, description="箍筋直径 (mm)")
+
 
 class BeamLoadOutput(BaseModel):
     """次梁荷载计算结果"""

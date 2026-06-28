@@ -64,6 +64,18 @@ def fork_snapshot(
     )
 
 
+@router.patch("/projects/{project_id}/snapshots/{snapshot_id}", response_model=SnapshotPublic)
+def rename_snapshot(
+    project_id: int, snapshot_id: int, payload: SnapshotCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    _require_project(current_user["id"], project_id)
+    snap = repo.rename_snapshot(current_user["id"], snapshot_id, payload.name or "未命名归档")
+    if snap is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="快照不存在")
+    return SnapshotPublic(**snap)
+
+
 @router.delete("/snapshots/{snapshot_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_snapshot(snapshot_id: int, current_user: dict = Depends(get_current_user)):
     if not repo.delete_snapshot(current_user["id"], snapshot_id):

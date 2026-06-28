@@ -186,7 +186,7 @@ class TestMainBeamShear:
         result = calc_main_beam_shear(
             max_shear=170.7106,
             b=250, h=500, cover=30, bar_diameter=20,
-            fc=9.6, gamma_d=1.20,
+            ft=1.10, gamma_d=1.20,
             stirrup_diameter=10, stirrup_legs=2,
             fyv=270,
         )

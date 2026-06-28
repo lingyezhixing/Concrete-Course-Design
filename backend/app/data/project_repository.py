@@ -20,6 +20,7 @@ def empty_data() -> dict:
             "main_beam_width": None, "main_beam_height": None,
             "column_width": None,
             "slab_spans": None, "beam_spans": None, "main_beam_spans": None,
+            "beam_stirrup_diameter": None, "main_beam_stirrup_diameter": None,
         },
         "materials": {"fc": 9.6, "fy_slab": 270, "fy_beam": 300, "gamma_d": 1.2},
         "loads": {
@@ -90,13 +91,13 @@ def update_project(
     conn = get_connection()
     if name is not None:
         conn.execute(
-            "UPDATE projects SET name = ?, data = ?, updated_at = strftime('%Y-%m-%d %H:%M:%f','now') "
+            "UPDATE projects SET name = ?, data = ?, updated_at = strftime('%Y-%m-%d %H:%M:%f','now', 'localtime') "
             "WHERE id = ? AND user_id = ?",
             (name, new_data, project_id, user_id),
         )
     else:
         conn.execute(
-            "UPDATE projects SET data = ?, updated_at = strftime('%Y-%m-%d %H:%M:%f','now') "
+            "UPDATE projects SET data = ?, updated_at = strftime('%Y-%m-%d %H:%M:%f','now', 'localtime') "
             "WHERE id = ? AND user_id = ?",
             (new_data, project_id, user_id),
         )
@@ -119,7 +120,7 @@ def touch_opened(user_id: int, project_id: int) -> None:
     """打开项目时更新 last_opened_at。"""
     conn = get_connection()
     conn.execute(
-        "UPDATE projects SET last_opened_at = strftime('%Y-%m-%d %H:%M:%f','now') WHERE id = ? AND user_id = ?",
+        "UPDATE projects SET last_opened_at = strftime('%Y-%m-%d %H:%M:%f','now', 'localtime') WHERE id = ? AND user_id = ?",
         (project_id, user_id),
     )
     conn.commit()
@@ -173,6 +174,21 @@ def get_snapshot(user_id: int, snapshot_id: int) -> dict | None:
     ).fetchone()
     conn.close()
     return _snapshot_row_to_dict(row) if row else None
+
+
+def rename_snapshot(user_id: int, snapshot_id: int, name: str) -> dict | None:
+    """重命名快照。非自有返回 None。"""
+    snap = get_snapshot(user_id, snapshot_id)
+    if snap is None:
+        return None
+    conn = get_connection()
+    conn.execute(
+        "UPDATE snapshots SET name = ? WHERE id = ? AND user_id = ?",
+        (name, snapshot_id, user_id),
+    )
+    conn.commit()
+    conn.close()
+    return get_snapshot(user_id, snapshot_id)
 
 
 def delete_snapshot(user_id: int, snapshot_id: int) -> bool:

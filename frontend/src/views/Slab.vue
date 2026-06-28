@@ -306,8 +306,8 @@ function reinfLabel(status: string): string {
 }
 /** 配筋状态对应 el-tag 类型。 */
 function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
-  if (status === 'pass' || status === 'ok') return 'success'
-  if (status === 'review') return 'warning'
+  if (status === 'pass' || status === 'ok' || status === '推荐') return 'success'
+  if (status === 'review' || status === '建议复核') return 'danger'
   return 'danger'
 }
 </script>

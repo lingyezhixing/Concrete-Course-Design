@@ -93,7 +93,7 @@ def calc_beam_shear(
     h: float,
     cover: float,
     bar_diameter: float,
-    fc: float,
+    ft: float,
     fy: float,
     gamma_d: float,
     stirrup_diameter: int = 6,
@@ -104,7 +104,7 @@ def calc_beam_shear(
     return calc_shear_design(
         max_shear=max_shear,
         b=b, h=h, cover=cover, bar_diameter=bar_diameter,
-        fc=fc, gamma_d=gamma_d,
+        ft=ft, gamma_d=gamma_d,
         stirrup_diameter=stirrup_diameter,
         stirrup_legs=stirrup_legs,
         fyv=fyv,

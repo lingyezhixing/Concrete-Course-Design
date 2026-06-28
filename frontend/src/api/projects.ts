@@ -19,6 +19,8 @@ export interface Structure {
   slab_spans: number | null
   beam_spans: number | null
   main_beam_spans: number | null
+  beam_stirrup_diameter: number | null
+  main_beam_stirrup_diameter: number | null
 }
 
 export interface Loads {
@@ -86,6 +88,7 @@ export function emptyProjectData(): ProjectData {
       main_beam_width: null, main_beam_height: null,
       column_width: null,
       slab_spans: null, beam_spans: null, main_beam_spans: null,
+      beam_stirrup_diameter: null, main_beam_stirrup_diameter: null,
     },
     materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
     loads: {
@@ -170,6 +173,18 @@ export async function forkSnapshot(
 ): Promise<ProjectPublic> {
   const { data } = await api.post<ProjectPublic>(
     `/projects/${projectId}/snapshots/${snapshotId}/fork`,
+    { name },
+  )
+  return data
+}
+
+export async function renameSnapshot(
+  projectId: number,
+  snapshotId: number,
+  name: string,
+): Promise<SnapshotPublic> {
+  const { data } = await api.patch<SnapshotPublic>(
+    `/projects/${projectId}/snapshots/${snapshotId}`,
     { name },
   )
   return data

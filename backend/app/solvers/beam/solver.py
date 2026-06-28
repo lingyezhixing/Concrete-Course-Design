@@ -234,7 +234,8 @@ def calculate_beam(
     fc: float,
     fy: float,
     gamma_d: float,
-    cover: float = 25.0,
+    ft: float = 1.10,
+    cover: float = 30.0,
     bar_diameter: float = 20.0,
 ) -> BeamFullResult:
     """次梁完整计算编排：荷载 → 跨度 → 净跨 → 折算 → 内力 → 配筋(正截面+斜截面)。
@@ -266,7 +267,7 @@ def calculate_beam(
     max_shear = max((abs(s.value) for s in internal.shears), default=0.0)
     shear = calc_beam_shear(
         max_shear=max_shear, b=b, h=h, cover=cover, bar_diameter=bar_diameter,
-        fc=fc, fy=fy, gamma_d=gamma_d,
+        ft=ft, fy=fy, gamma_d=gamma_d, stirrup_diameter=inp.stirrup_diameter or 6,
     )
 
     return BeamFullResult(
