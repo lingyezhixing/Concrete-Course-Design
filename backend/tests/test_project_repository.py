@@ -1,5 +1,7 @@
 """项目/快照 repository 测试：用户隔离、CASCADE、restore/fork。"""
 
+import pytest
+
 from app.auth.repository import create_user
 from app.data import connection
 
@@ -18,12 +20,12 @@ def test_init_db_creates_projects_and_snapshots_tables(tmp_path, monkeypatch):
 
 
 def _seed_user(tmp_path, monkeypatch, name="alice"):
-    from app.auth.repository import create_user as _cu  # noqa
     monkeypatch.setattr(connection, "DB_PATH", tmp_path / "t.db")
     connection.init_db()
-    return _cu(name, "secret1")
+    return create_user(name, "secret1")
 
 
+@pytest.mark.xfail(strict=False, reason="Task 2 提供 project_repository 后通过")
 def test_delete_user_cascades_to_projects_and_snapshots(tmp_path, monkeypatch):
     from app.auth.repository import delete_user
     from app.data.project_repository import create_project, create_snapshot  # Task 2 提供
