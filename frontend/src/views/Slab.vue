@@ -137,6 +137,12 @@
           </div>
         </section>
 
+        <!-- 计算简图 -->
+        <section v-if="diagram" class="block">
+          <h2 class="block-title">计算简图</h2>
+          <UniformLoadBeamDiagram v-bind="diagram" />
+        </section>
+
         <!-- 内力 -->
         <section class="block">
           <h2 class="block-title">内力</h2>
@@ -266,6 +272,7 @@ import PageHeader from '../components/common/PageHeader.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
+import UniformLoadBeamDiagram from '../components/diagrams/UniformLoadBeamDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -317,6 +324,29 @@ const result = computed<SlabResult>(() =>
   data.value?.slab.result as unknown as SlabResult ?? {} as SlabResult,
 )
 const slabReady = computed(() => data.value?.slab?.initialized === true)
+
+/** 计算简图入参：跨数 / 跨度 / 折算荷载齐备时才渲染。 */
+const diagram = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.slab?.result as
+    | {
+        span?: { edge_span?: number; middle_span?: number }
+        converted?: { converted_dead?: number; converted_live?: number }
+      }
+    | undefined
+  if (!s || s.slab_spans == null || s.slab_thickness == null) return null
+  if (r?.span?.edge_span == null || r?.span?.middle_span == null) return null
+  if (r.converted?.converted_dead == null || r.converted?.converted_live == null) return null
+  return {
+    rawSpans: s.slab_spans,
+    edgeSpan: r.span.edge_span,
+    midSpan: r.span.middle_span,
+    loadDead: r.converted.converted_dead,
+    loadLive: r.converted.converted_live,
+    sectionType: 'slab' as const,
+    sectionSize: { h: s.slab_thickness },
+  }
+})
 
 /** 修改选筋子字段（diameter/spacing）。 */
 function updateBar(

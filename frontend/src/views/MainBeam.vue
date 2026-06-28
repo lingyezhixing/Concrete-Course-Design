@@ -44,6 +44,12 @@
         </div>
       </section>
 
+      <!-- 计算简图 -->
+      <section v-if="diagram" class="block">
+        <h2 class="block-title">计算简图</h2>
+        <MainBeamDiagram v-bind="diagram" />
+      </section>
+
       <!-- 内力 -->
       <section class="block">
         <h2 class="block-title">内力</h2>
@@ -122,6 +128,7 @@ import PageHeader from '../components/common/PageHeader.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
+import MainBeamDiagram from '../components/diagrams/MainBeamDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -146,6 +153,24 @@ const result = computed<MainBeamResult>(() =>
   data.value?.main_beam.result as unknown as MainBeamResult ?? {} as MainBeamResult,
 )
 const mbReady = computed(() => data.value?.main_beam?.initialized === true)
+
+/** 计算简图入参：主梁跨度由 L2 / main_beam_spans 重建（result 无 span 字段）。 */
+const diagram = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.main_beam?.result as
+    | { load?: { dead_load_design?: number; live_load_design?: number } }
+    | undefined
+  if (!s || s.L2 == null || s.main_beam_spans == null) return null
+  if (s.column_width == null || s.main_beam_width == null || s.main_beam_height == null) return null
+  if (r?.load?.dead_load_design == null || r?.load?.live_load_design == null) return null
+  return {
+    span: s.L2 / s.main_beam_spans,
+    loadG: r.load.dead_load_design,
+    loadQ: r.load.live_load_design,
+    columnWidth: s.column_width,
+    sectionSize: { b: s.main_beam_width, h: s.main_beam_height },
+  }
+})
 
 function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefined): void {
   if (!row.selected_bar || v == null) return

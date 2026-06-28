@@ -56,6 +56,9 @@ logs/
 # Superpowers docs (AI workflow artifacts, not project docs)
 docs/superpowers/
 
+# Superpowers brainstorm visual-companion session files
+.superpowers/
+
 # AI context generation
 generate_ai_context.py
 ai_context.md

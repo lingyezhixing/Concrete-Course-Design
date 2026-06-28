@@ -59,6 +59,12 @@
         </div>
       </section>
 
+      <!-- 计算简图 -->
+      <section v-if="diagram" class="block">
+        <h2 class="block-title">计算简图</h2>
+        <UniformLoadBeamDiagram v-bind="diagram" />
+      </section>
+
       <!-- 内力 -->
       <section class="block">
         <h2 class="block-title">内力</h2>
@@ -138,6 +144,7 @@ import PageHeader from '../components/common/PageHeader.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
+import UniformLoadBeamDiagram from '../components/diagrams/UniformLoadBeamDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -165,6 +172,29 @@ const result = computed<BeamResult>(() =>
   data.value?.beam.result as unknown as BeamResult ?? {} as BeamResult,
 )
 const beamReady = computed(() => data.value?.beam?.initialized === true)
+
+/** 计算简图入参：跨数 / 跨度 / 折算荷载 / 截面齐备时才渲染。 */
+const diagram = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.beam?.result as
+    | {
+        span?: { edge_span?: number; middle_span?: number }
+        converted?: { converted_dead?: number; converted_live?: number }
+      }
+    | undefined
+  if (!s || s.beam_spans == null || s.beam_width == null || s.beam_height == null) return null
+  if (r?.span?.edge_span == null || r?.span?.middle_span == null) return null
+  if (r.converted?.converted_dead == null || r.converted?.converted_live == null) return null
+  return {
+    rawSpans: s.beam_spans,
+    edgeSpan: r.span.edge_span,
+    midSpan: r.span.middle_span,
+    loadDead: r.converted.converted_dead,
+    loadLive: r.converted.converted_live,
+    sectionType: 'beam' as const,
+    sectionSize: { b: s.beam_width, h: s.beam_height },
+  }
+})
 
 function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefined): void {
   if (!row.selected_bar || v == null) return
