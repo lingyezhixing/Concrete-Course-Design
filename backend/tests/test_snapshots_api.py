@@ -1,21 +1,5 @@
 """快照端点测试：归档、恢复、fork、隔离。"""
 
-import pytest
-
-
-@pytest.fixture()
-def alice_token(client):
-    return client.post(
-        "/api/auth/register", json={"username": "alice", "password": "secret1"}
-    ).json()["access_token"]
-
-
-@pytest.fixture()
-def bob_token(client):
-    return client.post(
-        "/api/auth/register", json={"username": "bob", "password": "secret1"}
-    ).json()["access_token"]
-
 
 def _auth(token):
     return {"Authorization": f"Bearer {token}"}

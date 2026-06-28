@@ -11,13 +11,9 @@ from __future__ import annotations
 
 from app.models.beam import BeamFlexureResult, ShearDesignResult
 from app.solvers.common import (
-    alpha_s,
-    as_required,
+    calc_flexure_design,
     calc_shear_design,
     effective_depth,
-    flexure_status,
-    generate_bar_bundles,
-    xi,
 )
 
 __all__ = [
@@ -111,31 +107,9 @@ def calc_main_beam_flexure(
         section_label = "T形(第一类)" if m <= capacity else "T形(第二类)"
         bw = bf
     else:
-        section_label = "矩形"
-        bw = b
+        section_label, bw = "矩形", b
 
-    a_s = alpha_s(m, fc, bw, h0, gamma_d)
-    rel_xi = xi(a_s)
-    as_req = as_required(rel_xi, fc, fy, bw, h0)
-
-    candidates = generate_bar_bundles(as_req, beam_width=int(b))
-    selected = candidates[0] if candidates else None
-    as_prov = selected.area if selected else 0.0
-
-    return BeamFlexureResult(
-        name=name,
-        moment=round(m, 4),
-        h0=round(h0, 2),
-        section_type=section_label,
-        width_used=round(bw, 2),
-        alpha_s=round(a_s, 4),
-        xi=round(rel_xi, 4),
-        as_required=round(as_req, 4),
-        selected_bar=selected,
-        as_provided=round(as_prov, 4),
-        status=flexure_status(as_req, as_prov),
-        candidates=candidates,
-    )
+    return calc_flexure_design(name, moment, h0, b, bw, fc, fy, gamma_d, section_label)
 
 
 def calc_main_beam_shear(

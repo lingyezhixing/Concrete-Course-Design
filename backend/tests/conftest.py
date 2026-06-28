@@ -21,3 +21,19 @@ def client(isolated_db):
 
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def alice_token(client):
+    """注册用户 alice 并返回其 JWT。"""
+    return client.post(
+        "/api/auth/register", json={"username": "alice", "password": "secret1"}
+    ).json()["access_token"]
+
+
+@pytest.fixture()
+def bob_token(client):
+    """注册用户 bob 并返回其 JWT（用于跨用户隔离测试）。"""
+    return client.post(
+        "/api/auth/register", json={"username": "bob", "password": "secret1"}
+    ).json()["access_token"]

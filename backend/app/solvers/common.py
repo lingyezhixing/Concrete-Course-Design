@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from app.models.beam import BeamBarBundle, ShearDesignResult
+from app.models.beam import BeamBarBundle, BeamFlexureResult, ShearDesignResult
 
 __all__ = [
     "effective_depth",
@@ -21,7 +21,9 @@ __all__ = [
     "flexure_status",
     "ContinuousBeamCoefficients",
     "get_continuous_beam_coefficients",
+    "calc_continuous_beam_internal_forces",
     "generate_bar_bundles",
+    "calc_flexure_design",
     "calc_shear_design",
 ]
 
@@ -138,6 +140,126 @@ def get_continuous_beam_coefficients(spans: int) -> ContinuousBeamCoefficients:
 
 
 # ──────────────────────────────────────────────
+# 等跨连续梁内力计算（板、次梁共用）
+# ──────────────────────────────────────────────
+
+
+def _span_type_for_index(span_index: int, total_spans: int) -> str:
+    """判断某跨是边跨还是中间跨。"""
+    if total_spans <= 2:
+        return "edge"
+    if span_index == 0 or span_index == total_spans - 1:
+        return "edge"
+    return "middle"
+
+
+def _map_span_table(actual_idx: int, n: int) -> int:
+    """实际跨序号 → 系数表索引。
+
+    n ≤ 5 直接按位置取；n > 5 时按 5 跨简化：保留左右各两跨，
+    其余中间跨共用同一中跨系数（索引 4）。
+    """
+    if n <= 5:
+        return actual_idx * 2
+    if actual_idx == 0:
+        return 0
+    if actual_idx == 1:
+        return 2
+    if actual_idx == n - 2:
+        return 6
+    if actual_idx == n - 1:
+        return 8
+    return 4
+
+
+def _map_support_table(actual_idx: int, n: int) -> int:
+    """实际支座序号 → 系数表索引（n > 5 同样按 5 跨简化）。"""
+    if n <= 5:
+        return actual_idx * 2 + 1
+    if actual_idx == 0:
+        return 1
+    if actual_idx == 1:
+        return 3
+    if actual_idx == n - 2:
+        return 7
+    return 5
+
+
+def calc_continuous_beam_internal_forces(
+    g: float,
+    q: float,
+    n: int,
+    middle_span: float,
+    edge_span: float,
+    middle_net: float,
+    edge_net: float,
+    support_moment_delta: float = 0.0,
+) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
+    """等跨连续梁（均布荷载）内力计算 — 板、次梁共用。
+
+    M = α·g·l0² + α1·q·l0²   (弯矩，用计算跨度 l0)
+    V = β·g·ln + β1·q·ln     (剪力，用净跨度 ln)
+
+    系数查表仅支持 2~5 跨；n > 5 时按 5 跨查表（见 :func:`_map_span_table`）。
+    支座弯矩统一叠加 ``support_moment_delta``（次梁做支座边缘调整 M+(b/2)·V₀；板为 0）。
+
+    Returns:
+        (moments, shears)：各为 ``(截面名, 设计值)`` 元组列表，值已 round 到 4 位。
+    """
+    effective_spans = min(n, 5)
+    coeffs = get_continuous_beam_coefficients(effective_spans)
+
+    # ---- 弯矩 ----
+    moments: list[tuple[str, float]] = []
+    for pos in range(2 * n - 1):
+        if pos % 2 == 0:
+            span_idx = pos // 2
+            ti = _map_span_table(span_idx, n)
+            alpha = coeffs.moments[ti]
+            alpha1 = coeffs.moment_alpha1[ti]
+            l0 = edge_span if _span_type_for_index(span_idx, n) == "edge" else middle_span
+            value = alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2
+            moments.append((f"M{span_idx + 1}", round(value, 4)))
+        else:
+            support_idx = (pos - 1) // 2
+            ti = _map_support_table(support_idx, n)
+            alpha = coeffs.moments[ti]
+            alpha1 = coeffs.moment_alpha1[ti]
+            value = alpha * g * middle_span ** 2 + alpha1 * q * middle_span ** 2
+            value += support_moment_delta
+            letter = chr(ord("A") + support_idx + 1)
+            moments.append((f"M_{letter}", round(value, 4)))
+
+    # ---- 剪力 ----
+    shears: list[tuple[str, float]] = []
+    for pos in range(2 * n):
+        if pos == 0:
+            ti = 0
+            name = "V_A"
+        elif pos == 2 * n - 1:
+            ti = 2 * effective_spans - 1
+            name = f"V_{chr(ord('A') + n)}"
+        elif pos % 2 == 1:
+            support_idx = pos // 2
+            ti = _map_support_table(support_idx, n)
+            letter = chr(ord("A") + support_idx + 1)
+            name = f"Vl_{letter}"
+        else:
+            support_idx = pos // 2 - 1
+            ti = _map_support_table(support_idx, n) + 1
+            letter = chr(ord("A") + support_idx + 1)
+            name = f"Vr_{letter}"
+
+        ln = edge_net if (pos == 0 or pos == 2 * n - 1) else middle_net
+        beta = coeffs.shears[ti]
+        beta1 = coeffs.shear_beta1[ti]
+        value = beta * g * ln + beta1 * q * ln
+        shears.append((name, round(value, 4)))
+
+    return moments, shears
+
+
+# ──────────────────────────────────────────────
 # 梁配筋候选方案
 # ──────────────────────────────────────────────
 
@@ -150,14 +272,12 @@ _MAX_BARS_PER_LAYER = {200: 3, 250: 3, 300: 4, 350: 5}
 def generate_bar_bundles(
     as_required: float,
     beam_width: int = 200,
-    min_diameter: int = 12,
 ) -> list[BeamBarBundle]:
     """生成梁配筋候选方案（按面积升序）。
 
     Args:
         as_required: 所需钢筋面积 (mm²)
         beam_width: 梁宽 (mm)
-        min_diameter: 最小钢筋直径 (mm)
 
     Returns:
         满足 As ≥ as_required 的候选方案，按面积升序
@@ -167,8 +287,6 @@ def generate_bar_bundles(
     seen: set[str] = set()
 
     for d in _STANDARD_BAR_DIAMETERS:
-        if d < min_diameter:
-            continue
         max_bars = min(6, max_per_layer * 2)  # 最多 2 层
         for n in _BAR_COUNTS:
             if n > max_bars:
@@ -183,6 +301,56 @@ def generate_bar_bundles(
 
     candidates.sort(key=lambda c: c.area)
     return candidates
+
+
+def calc_flexure_design(
+    name: str,
+    moment: float,
+    h0: float,
+    b: float,
+    bw: float,
+    fc: float,
+    fy: float,
+    gamma_d: float,
+    section_label: str,
+) -> BeamFlexureResult:
+    """正截面受弯配筋的力学计算（次梁、主梁共用）。
+
+    截面分类（T 形第一/二类 vs 矩形）及计算宽 ``bw`` 由调用方按构件规则决定后传入；
+    本函数只负责 h₀→αs→ξ→As→选筋→状态→结果的统一流程。
+
+    Args:
+        moment: 弯矩设计值 (kN·m)，内部取绝对值
+        h0: 有效高度 (mm)，由调用方算好（截面分类也需用到）
+        b: 梁宽 (mm)，用于限制钢筋布置根数
+        bw: 计算采用的截面宽 (mm)
+        fc, fy: 材料强度设计值 (N/mm²)
+        gamma_d: 结构系数
+        section_label: 截面类型文案（如 "T形(第一类)" / "矩形"）
+    """
+    m = abs(moment)
+    a_s = alpha_s(m, fc, bw, h0, gamma_d)
+    rel_xi = xi(a_s)
+    as_req = as_required(rel_xi, fc, fy, bw, h0)
+
+    candidates = generate_bar_bundles(as_req, beam_width=int(b))
+    selected = candidates[0] if candidates else None
+    as_prov = selected.area if selected else 0.0
+
+    return BeamFlexureResult(
+        name=name,
+        moment=round(m, 4),
+        h0=round(h0, 2),
+        section_type=section_label,
+        width_used=round(bw, 2),
+        alpha_s=round(a_s, 4),
+        xi=round(rel_xi, 4),
+        as_required=round(as_req, 4),
+        selected_bar=selected,
+        as_provided=round(as_prov, 4),
+        status=flexure_status(as_req, as_prov),
+        candidates=candidates,
+    )
 
 
 # ──────────────────────────────────────────────

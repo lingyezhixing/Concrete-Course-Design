@@ -12,7 +12,7 @@ from app.models.slab import (
     SlabReinforcementOutput,
     SlabFullResult,
 )
-from app.solvers.common import get_continuous_beam_coefficients
+from app.solvers.common import calc_continuous_beam_internal_forces
 from app.solvers.slab.utils import calc_section_reinforcement
 
 __all__ = [
@@ -112,15 +112,6 @@ def convert_loads(load: SlabLoadOutput) -> SlabLoadConvertOutput:
     )
 
 
-def _span_type_for_index(span_index: int, total_spans: int) -> str:
-    """判断某跨是边跨还是中间跨。"""
-    if total_spans <= 2:
-        return "edge"
-    if span_index == 0 or span_index == total_spans - 1:
-        return "edge"
-    return "middle"
-
-
 def calculate_internal_forces(
     inp: SlabInput,
     load: SlabLoadOutput,
@@ -133,91 +124,20 @@ def calculate_internal_forces(
     M = α·g·l0² + α1·q·l0²   (弯矩，用计算跨度 l0)
     V = β·g·ln + β1·q·ln     (剪力，用净跨度 ln)
 
-    系数查表仅支持 2 ~ 5 跨。当实际跨数 > 5 时，按 5 跨查表，
-    保留左边两跨和右边两跨的系数，中间所有跨使用相同的中间跨系数。
+    内力计算主体（含 >5 跨的 5 跨简化）与次梁共用
+    :func:`app.solvers.common.calc_continuous_beam_internal_forces`；板无支座边缘调整。
     """
-    g = converted.converted_dead
-    q = converted.converted_live
-    n = inp.spans
-    effective_spans = min(n, 5)
-    coeffs = get_continuous_beam_coefficients(effective_spans)
-
-    def _map_span_table(actual_idx: int) -> int:
-        if n <= 5:
-            return actual_idx * 2
-        if actual_idx == 0:
-            return 0
-        if actual_idx == 1:
-            return 2
-        if actual_idx == n - 2:
-            return 6
-        if actual_idx == n - 1:
-            return 8
-        return 4
-
-    def _map_support_table(actual_idx: int) -> int:
-        if n <= 5:
-            return actual_idx * 2 + 1
-        if actual_idx == 0:
-            return 1
-        if actual_idx == 1:
-            return 3
-        if actual_idx == n - 2:
-            return 7
-        return 5
-
-    # ---- 弯矩 ----
-    moments: list[SlabMomentResult] = []
-    for pos in range(2 * n - 1):
-        if pos % 2 == 0:
-            span_idx = pos // 2
-            ti = _map_span_table(span_idx)
-            alpha = coeffs.moments[ti]
-            alpha1 = coeffs.moment_alpha1[ti]
-            st = _span_type_for_index(span_idx, n)
-            l0 = spans.edge_span if st == "edge" else spans.middle_span
-            value = alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2
-            moments.append(SlabMomentResult(name=f"M{span_idx + 1}", value=round(value, 4)))
-        else:
-            support_idx = (pos - 1) // 2
-            ti = _map_support_table(support_idx)
-            alpha = coeffs.moments[ti]
-            alpha1 = coeffs.moment_alpha1[ti]
-            l0 = spans.middle_span
-            value = alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2
-            letter = chr(ord('A') + support_idx + 1)
-            moments.append(SlabMomentResult(name=f"M_{letter}", value=round(value, 4)))
-
-    # ---- 剪力 ----
-    shears: list[SlabShearResult] = []
-    for pos in range(2 * n):
-        span_idx = pos // 2
-        if pos == 0:
-            ti = 0
-            name = "V_A"
-        elif pos == 2 * n - 1:
-            ti = 2 * effective_spans - 1
-            name = f"V_{chr(ord('A') + n)}"
-        elif pos % 2 == 1:
-            support_idx = pos // 2
-            ti = _map_support_table(support_idx)
-            letter = chr(ord('A') + support_idx + 1)
-            name = f"Vl_{letter}"
-        else:
-            support_idx = pos // 2 - 1
-            ti = _map_support_table(support_idx) + 1
-            letter = chr(ord('A') + support_idx + 1)
-            name = f"Vr_{letter}"
-
-        if pos == 0 or pos == 2 * n - 1:
-            ln = net_spans.edge_net
-        else:
-            ln = net_spans.middle_net
-        beta = coeffs.shears[ti]
-        beta1 = coeffs.shear_beta1[ti]
-        value = beta * g * ln + beta1 * q * ln
-        shears.append(SlabShearResult(name=name, value=round(value, 4)))
-
+    moments_raw, shears_raw = calc_continuous_beam_internal_forces(
+        g=converted.converted_dead,
+        q=converted.converted_live,
+        n=inp.spans,
+        middle_span=spans.middle_span,
+        edge_span=spans.edge_span,
+        middle_net=net_spans.middle_net,
+        edge_net=net_spans.edge_net,
+    )
+    moments = [SlabMomentResult(name=name, value=v) for name, v in moments_raw]
+    shears = [SlabShearResult(name=name, value=v) for name, v in shears_raw]
     return SlabInternalForceOutput(moments=moments, shears=shears)
 
 

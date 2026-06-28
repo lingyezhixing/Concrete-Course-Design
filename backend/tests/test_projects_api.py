@@ -1,7 +1,5 @@
 """项目 CRUD 端点测试（隔离、has_uncommitted、门禁）。"""
 
-import pytest
-
 from app.models.project import (
     LOADS_REQUIRED,
     STRUCTURE_REQUIRED,
@@ -33,18 +31,6 @@ def test_project_patch_all_optional():
     assert p.name is None and p.data is None
     p2 = ProjectPatch(name="x")
     assert p2.name == "x"
-
-
-@pytest.fixture()
-def alice_token(client):
-    res = client.post("/api/auth/register", json={"username": "alice", "password": "secret1"})
-    return res.json()["access_token"]
-
-
-@pytest.fixture()
-def bob_token(client):
-    res = client.post("/api/auth/register", json={"username": "bob", "password": "secret1"})
-    return res.json()["access_token"]
 
 
 def _auth(token):

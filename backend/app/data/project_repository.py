@@ -5,6 +5,7 @@
 
 import json
 
+from app import materials
 from app.data.connection import get_connection
 
 
@@ -22,7 +23,10 @@ def empty_data() -> dict:
             "slab_spans": None, "beam_spans": None, "main_beam_spans": None,
             "beam_stirrup_diameter": None, "main_beam_stirrup_diameter": None,
         },
-        "materials": {"fc": 9.6, "fy_slab": 270, "fy_beam": 300, "gamma_d": 1.2},
+        "materials": {
+            "fc": materials.FC, "fy_slab": materials.FY_SLAB,
+            "fy_beam": materials.FY_BEAM, "gamma_d": materials.GAMMA_D,
+        },
         "loads": {
             "reinforced_concrete_weight": None, "terrazzo_surface": None,
             "plaster_thickness": None, "plaster_weight": None, "live_load": None,
