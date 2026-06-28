@@ -3,7 +3,7 @@ import { ref } from 'vue'
 export type Theme = 'dark' | 'light' | 'warm'
 
 const GLOBAL_KEY = 'ccd-theme'
-const DEFAULT_THEME: Theme = 'dark'
+const DEFAULT_THEME: Theme = 'light'
 const VALID: ReadonlySet<Theme> = new Set(['dark', 'light', 'warm'])
 
 // 当前作用域键：登录后为 ccd-theme:<userId>，未登录为全局 ccd-theme

@@ -7,10 +7,10 @@ describe('useTheme', () => {
     vi.resetModules()
   })
 
-  it('defaults to dark when nothing stored', async () => {
+  it('defaults to light when nothing stored', async () => {
     const { useTheme } = await import('./useTheme')
     const { theme } = useTheme()
-    expect(theme.value).toBe('dark')
+    expect(theme.value).toBe('light')
   })
 
   it('reads stored light theme', async () => {
@@ -27,16 +27,16 @@ describe('useTheme', () => {
     expect(theme.value).toBe('warm')
   })
 
-  it('falls back to dark when stored value is invalid', async () => {
+  it('falls back to light when stored value is invalid', async () => {
     localStorage.setItem('ccd-theme', 'neon')
     const { useTheme } = await import('./useTheme')
     const { theme } = useTheme()
-    expect(theme.value).toBe('dark')
+    expect(theme.value).toBe('light')
   })
 
   it('applies data-theme on init', async () => {
     await import('./useTheme')
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
   })
 
   it('setTheme updates value, persists, and applies data-theme', async () => {
