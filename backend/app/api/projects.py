@@ -25,11 +25,13 @@ def _to_public(project: dict, has_uncommitted: bool) -> ProjectPublic:
 
 
 def _has_uncommitted(user_id: int, project: dict) -> bool:
-    """updated_at > 最新快照 created_at，或无快照 → 有未归档改动。"""
+    """是否有「自上次提交点（创建或最新归档）之后的改动」。
+    提交点 = 最新快照 created_at（若有），否则项目 created_at。
+    has_uncommitted = updated_at > 提交点。
+    """
     snaps = repo.list_snapshots(user_id, project["id"])
-    if not snaps:
-        return True
-    return project["updated_at"] > snaps[0]["created_at"]  # list_snapshots 按 created_at DESC
+    commit_point = snaps[0]["created_at"] if snaps else project["created_at"]
+    return project["updated_at"] > commit_point
 
 
 @router.get("", response_model=list[ProjectPublic])
@@ -41,10 +43,7 @@ def list_projects(current_user: dict = Depends(get_current_user)):
 @router.post("", response_model=ProjectPublic, status_code=status.HTTP_201_CREATED)
 def create_project(payload: ProjectCreate, current_user: dict = Depends(get_current_user)):
     project = repo.create_project(current_user["id"], payload.name)
-    # 新建项目即空骨架（empty_data），尚无任何编辑 → has_uncommitted=False。
-    # （与 list/get 的 _has_uncommitted 判定不同：那是面向“有快照后是否再改过”。
-    #  create 用 False 以匹配 test_create_and_list_project 的预期。）
-    return _to_public(project, False)
+    return _to_public(project, _has_uncommitted(current_user["id"], project))
 
 
 @router.get("/{project_id}", response_model=ProjectPublic)

@@ -75,13 +75,13 @@ def update_project(
     conn = get_connection()
     if name is not None:
         conn.execute(
-            "UPDATE projects SET name = ?, data = ?, updated_at = datetime('now') "
+            "UPDATE projects SET name = ?, data = ?, updated_at = strftime('%Y-%m-%d %H:%M:%f','now') "
             "WHERE id = ? AND user_id = ?",
             (name, new_data, project_id, user_id),
         )
     else:
         conn.execute(
-            "UPDATE projects SET data = ?, updated_at = datetime('now') "
+            "UPDATE projects SET data = ?, updated_at = strftime('%Y-%m-%d %H:%M:%f','now') "
             "WHERE id = ? AND user_id = ?",
             (new_data, project_id, user_id),
         )
@@ -104,7 +104,7 @@ def touch_opened(user_id: int, project_id: int) -> None:
     """打开项目时更新 last_opened_at。"""
     conn = get_connection()
     conn.execute(
-        "UPDATE projects SET last_opened_at = datetime('now') WHERE id = ? AND user_id = ?",
+        "UPDATE projects SET last_opened_at = strftime('%Y-%m-%d %H:%M:%f','now') WHERE id = ? AND user_id = ?",
         (project_id, user_id),
     )
     conn.commit()

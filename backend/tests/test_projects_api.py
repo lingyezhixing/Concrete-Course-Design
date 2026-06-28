@@ -91,3 +91,13 @@ def test_delete_project(client, alice_token):
     pid = client.post("/api/projects", json={"name": "p1"}, headers=_auth(alice_token)).json()["id"]
     assert client.delete(f"/api/projects/{pid}", headers=_auth(alice_token)).status_code == 204
     assert client.get(f"/api/projects/{pid}", headers=_auth(alice_token)).status_code == 404
+
+
+def test_fresh_project_has_uncommitted_consistently_false(client, alice_token):
+    # 新建、未编辑的项目：POST / GET / LIST 三处 has_uncommitted 必须一致为 False
+    pid = client.post("/api/projects", json={"name": "p1"}, headers=_auth(alice_token)).json()["id"]
+
+    assert client.get(f"/api/projects/{pid}", headers=_auth(alice_token)).json()["has_uncommitted"] is False
+
+    lst = client.get("/api/projects", headers=_auth(alice_token)).json()
+    assert all(p["has_uncommitted"] is False for p in lst), lst
