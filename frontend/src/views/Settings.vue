@@ -90,34 +90,30 @@ async function confirmDelete(): Promise<void> {
 
 <style scoped>
 .settings {
-  max-width: 720px;
+  max-width: var(--content-max);
 }
-.block {
-  margin-top: 20px;
-  padding: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.block-title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
+/* .muted 全局已提供颜色与字号，此处仅补段落间距 */
+.muted {
+  margin: 0 0 var(--space-3);
 }
 .theme-options {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 .opt {
   height: 32px;
-  padding: 0 14px;
-  font-size: 13px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-base);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: transparent;
   color: var(--muted-foreground);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast);
 }
 .opt:hover {
   background: var(--muted);
@@ -127,11 +123,6 @@ async function confirmDelete(): Promise<void> {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
-}
-.muted {
-  margin: 0 0 14px;
-  color: var(--muted-foreground);
-  font-size: 13px;
 }
 .danger {
   border-color: var(--destructive);

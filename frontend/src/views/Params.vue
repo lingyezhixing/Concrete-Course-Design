@@ -3,9 +3,14 @@
     <PageHeader title="设计参数" subtitle="结构、材料与荷载参数配置" />
 
     <!-- 守卫：无活动项目 -->
-    <section v-if="!isActive()" class="block guard">
-      <p class="muted">请先在开始页选择或新建项目</p>
-      <el-button type="primary" @click="router.push('/')">前往开始页</el-button>
+    <section v-if="!isActive()" class="block">
+      <EmptyState
+        :icon="guardIcon"
+        title="尚未选择项目"
+        description="请先在开始页选择或新建一个项目，再配置设计参数。"
+      >
+        <el-button type="primary" @click="router.push('/')">前往开始页</el-button>
+      </EmptyState>
     </section>
 
     <template v-else>
@@ -96,12 +101,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { FolderOpen } from '@lucide/vue'
 import PageHeader from '../components/common/PageHeader.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import type { Loads, Structure } from '../api/projects'
+
+const guardIcon = markRaw(FolderOpen)
 
 const router = useRouter()
 const { data, saving, loading, isActive, calculate } = useProject()
@@ -216,71 +225,52 @@ async function confirmCalc(): Promise<void> {
 .params {
   width: 100%;
 }
-.block {
-  margin-top: 20px;
-  padding: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.block-title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground);
-}
 .form {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px 20px;
+  gap: var(--space-1) var(--space-5);
 }
 .form :deep(.el-form-item) {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 .form :deep(.el-form-item__label) {
   color: var(--foreground);
-  font-size: 13px;
-  padding-bottom: 4px;
+  font-size: var(--text-base);
+  padding-bottom: var(--space-1);
 }
 .form :deep(.el-input-number) {
   width: 100%;
 }
 .hint {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--muted-foreground);
   margin-top: 2px;
   line-height: 1.3;
 }
 .derived {
-  margin: 12px 0 0;
-  font-size: 12px;
-}
-.muted {
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
-.guard {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-}
-.guard .muted {
-  margin: 0;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
 }
 .note {
-  margin: 0 0 12px;
-  font-size: 12px;
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
 }
 .actions {
-  margin-top: 24px;
+  margin-top: var(--space-6);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 14px;
+  gap: var(--space-3);
 }
 .save-state {
-  font-size: 12px;
+  font-size: var(--text-sm);
+}
+
+/* 窄屏：参数表单降为 2 列 */
+@media (max-width: 899px) {
+  .form {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

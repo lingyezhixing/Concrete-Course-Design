@@ -6,13 +6,23 @@
       </template>
     </PageHeader>
 
-    <section v-if="!isActive()" class="block guard">
-      <p class="muted">请先在开始页选择或新建项目</p>
-      <el-button type="primary" @click="router.push('/')">前往开始页</el-button>
+    <section v-if="!isActive()" class="block">
+      <EmptyState
+        :icon="noProjectIcon"
+        title="尚未选择项目"
+        description="请先在开始页选择或新建一个项目。"
+      >
+        <el-button type="primary" @click="router.push('/')">前往开始页</el-button>
+      </EmptyState>
     </section>
-    <section v-else-if="!beamReady" class="block guard">
-      <p class="muted">请先在参数页确认计算</p>
-      <el-button type="primary" @click="router.push('/params')">前往参数页</el-button>
+    <section v-else-if="!beamReady" class="block">
+      <EmptyState
+        :icon="noCalcIcon"
+        title="尚未计算"
+        description="请先在参数页填写参数并确认计算。"
+      >
+        <el-button type="primary" @click="router.push('/params')">前往参数页</el-button>
+      </EmptyState>
     </section>
 
     <div v-else class="data">
@@ -78,7 +88,7 @@
       <section class="block">
         <h2 class="block-title">正截面配筋</h2>
         <el-table :data="result.reinforcement.flexure" size="small" class="compact-table" border>
-          <el-table-column prop="name" label="截面" min-width="80" />
+          <el-table-column prop="name" label="截面" min-width="80" fixed="left" />
           <el-table-column prop="section_type" label="类型" min-width="110" />
           <el-table-column prop="width_used" label="计算宽" min-width="80" align="right" />
           <el-table-column prop="moment" label="M" min-width="80" align="right" />
@@ -121,11 +131,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
+import { FolderOpen, Calculator } from '@lucide/vue'
 import PageHeader from '../components/common/PageHeader.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
+
+const noProjectIcon = markRaw(FolderOpen)
+const noCalcIcon = markRaw(Calculator)
 
 const router = useRouter()
 const { data, saving, isActive } = useProject()
@@ -159,28 +174,26 @@ function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefi
 
 <style scoped>
 .beam { width: 100%; }
-.block { margin-top: 20px; padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
-.block-title { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--foreground); }
-.sub-title { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted-foreground); }
-.force-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.sub-title { margin: 0 0 var(--space-2); font-size: var(--text-base); font-weight: 600; color: var(--muted-foreground); }
+.force-split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
 .force-table { min-width: 0; }
-.muted { color: var(--muted-foreground); font-size: 13px; }
-.save-state { font-size: 12px; color: var(--muted-foreground); }
-.guard { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
-.guard .muted { margin: 0; }
+.save-state { font-size: var(--text-sm); color: var(--muted-foreground); }
+
 .data .block:first-child { margin-top: 0; }
-.load-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
-.field { display: flex; flex-direction: column; gap: 4px; }
+
+.load-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-6); }
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
 .field.full { grid-column: 1 / -1; }
-.lbl { font-size: 12px; color: var(--muted-foreground); }
-.val { font-size: 14px; }
+.lbl { font-size: var(--text-sm); color: var(--muted-foreground); }
+.val { font-size: var(--text-md); }
 .num { width: 100%; }
 .num :deep(input) { text-align: left; }
-.compact-table { font-size: 13px; }
-.compact-table :deep(.el-table__cell) { padding: 4px 0; }
-.bar-cell { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+.compact-table { font-size: var(--text-base); }
+.compact-table :deep(.el-table__cell) { padding: var(--space-1) 0; }
+.bar-cell { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-base); color: var(--foreground); }
 .bar-num { width: 56px; }
-.bar-num :deep(input) { text-align: center; padding-left: 4px; padding-right: 4px; }
+.bar-num :deep(input) { text-align: center; padding-left: var(--space-1); padding-right: var(--space-1); }
 
 @media (max-width: 960px) {
   .force-split { grid-template-columns: 1fr; }

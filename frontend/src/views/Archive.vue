@@ -7,6 +7,7 @@
     </PageHeader>
 
     <p v-if="!isActive()" class="muted hint">无活动项目，请先在开始页打开一个。</p>
+    <p v-else-if="loading" class="muted hint">加载中…</p>
 
     <!-- 项目卡片 -->
     <section
@@ -64,22 +65,30 @@
     </section>
 
     <!-- 空状态 -->
-    <section v-if="!projects.length && !loading" class="empty">
-      <p class="muted">还没有项目</p>
-      <el-button type="primary" @click="router.push('/')">前往开始页</el-button>
+    <section v-if="!projects.length && !loading" class="block">
+      <EmptyState
+        :icon="emptyIcon"
+        title="还没有项目"
+        description="存档与历史会随项目自动积累。先在开始页新建一个项目吧。"
+      >
+        <el-button type="primary" @click="router.push('/')">前往开始页</el-button>
+      </EmptyState>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { markRaw, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Ellipsis } from '@lucide/vue'
+import { Ellipsis, History } from '@lucide/vue'
 import PageHeader from '../components/common/PageHeader.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { patchProject, renameSnapshot } from '../api/projects'
 import type { ProjectPublic, SnapshotPublic } from '../api/projects'
+
+const emptyIcon = markRaw(History)
 
 const router = useRouter()
 const {
@@ -245,18 +254,14 @@ onMounted(reload)
 .archive {
   width: 100%;
 }
-.muted {
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
 .hint {
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
 
 /* 项目卡片 */
 .proj-card {
-  margin-top: 20px;
-  padding: 16px 18px;
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -269,29 +274,29 @@ onMounted(reload)
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .proj-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
 }
 .proj-name {
-  font-size: 15px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--foreground);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 .proj-meta {
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 .more-btn {
   color: var(--muted-foreground);
-  padding: 4px;
+  padding: var(--space-1);
   flex-shrink: 0;
 }
 .more-btn:hover {
@@ -301,14 +306,14 @@ onMounted(reload)
 /* 快照时间线 */
 .timeline {
   list-style: none;
-  margin: 14px 0 0;
-  padding: 0 0 0 8px;
+  margin: var(--space-4) 0 0;
+  padding: 0 0 0 var(--space-2);
   position: relative;
 }
 .timeline::before {
   content: '';
   position: absolute;
-  left: 12px;
+  left: var(--space-3);
   top: 6px;
   bottom: 6px;
   width: 2px;
@@ -317,8 +322,8 @@ onMounted(reload)
 .snap {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 0;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
   position: relative;
 }
 .snap-dot {
@@ -339,23 +344,14 @@ onMounted(reload)
   flex: 1;
 }
 .snap-name {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--foreground);
 }
 .snap-meta {
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 .snap-empty {
-  margin: 12px 0 0;
-  font-size: 12px;
-}
-
-.empty {
-  margin-top: 40px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
 }
 </style>
