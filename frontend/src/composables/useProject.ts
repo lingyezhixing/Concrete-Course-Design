@@ -34,9 +34,9 @@ async function saveNow(): Promise<void> {
   if (!isActive()) return
   saving.value = true
   try {
-    const res = await projectsApi.patchProject(projectId.value!, { data: data.value! })
-    // 同步服务端的 data（防止字段漂移），但保留本地的编辑时效
-    data.value = res.data
+    // 不回写 res.data：后端不对前端需要的字段做规范化，回写会重新触发深度 watcher
+    // → 再排一次防抖保存 → 每 800ms 空转 PATCH。前端 data 即权威。
+    await projectsApi.patchProject(projectId.value!, { data: data.value! })
   } finally {
     saving.value = false
   }
