@@ -16,8 +16,11 @@ from app.models.beam import (
     BeamMomentResult,
     BeamShearResult,
     BeamInternalForceOutput,
+    BeamFullResult,
+    BeamReinforcementOutput,
 )
 from app.solvers.common import get_continuous_beam_coefficients
+from app.solvers.beam.utils import calc_beam_flexure, calc_beam_shear
 
 __all__ = [
     "calculate_beam_load",
@@ -25,6 +28,7 @@ __all__ = [
     "calculate_beam_net_spans",
     "convert_beam_loads",
     "calculate_beam_internal_forces",
+    "calculate_beam",
 ]
 
 
@@ -223,3 +227,50 @@ def calculate_beam_internal_forces(
         shears.append(BeamShearResult(name=name, value=round(value, 4)))
 
     return BeamInternalForceOutput(moments=moments, shears=shears)
+
+
+def calculate_beam(
+    inp: BeamInput,
+    fc: float,
+    fy: float,
+    gamma_d: float,
+    cover: float = 25.0,
+    bar_diameter: float = 20.0,
+) -> BeamFullResult:
+    """次梁完整计算编排：荷载 → 跨度 → 净跨 → 折算 → 内力 → 配筋(正截面+斜截面)。
+
+    不改各步骤核心逻辑，仅串联 + 供应构造默认值（cover/bar_diameter）。
+    截面类型：跨中正弯矩 → T 形；支座负弯矩 → 矩形。
+    翼缘 bf = 次梁间距 × 1000 (mm)；hf = 板厚。
+    """
+    load = calculate_beam_load(inp)
+    spans = calculate_beam_spans(inp)
+    net_spans = calculate_beam_net_spans(inp)
+    converted = convert_beam_loads(load)
+    internal = calculate_beam_internal_forces(inp, load, spans, net_spans, converted)
+
+    b = inp.beam_width
+    h = inp.beam_height
+    bf = inp.beam_spacing * 1000.0
+    hf = inp.slab_thickness
+
+    flexure = []
+    for m in internal.moments:
+        section_type = "T" if m.value >= 0 else "rect"  # 正弯矩跨中T形，负弯矩支座矩形
+        flexure.append(calc_beam_flexure(
+            name=m.name, moment=m.value, section_type=section_type,
+            b=b, bf=bf, h=h, hf=hf, cover=cover, bar_diameter=bar_diameter,
+            fc=fc, fy=fy, gamma_d=gamma_d,
+        ))
+
+    max_shear = max((abs(s.value) for s in internal.shears), default=0.0)
+    shear = calc_beam_shear(
+        max_shear=max_shear, b=b, h=h, cover=cover, bar_diameter=bar_diameter,
+        fc=fc, fy=fy, gamma_d=gamma_d,
+    )
+
+    return BeamFullResult(
+        load=load, span=spans, net_span=net_spans, converted=converted,
+        internal_forces=internal,
+        reinforcement=BeamReinforcementOutput(flexure=flexure, shear=shear),
+    )

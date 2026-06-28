@@ -13,6 +13,7 @@ __all__ = [
     "BeamMomentResult",
     "BeamShearResult",
     "BeamInternalForceOutput",
+    "BeamFullResult",
 ]
 
 
@@ -161,3 +162,14 @@ class BeamReinforcementOutput(BaseModel):
 
     flexure: list[BeamFlexureResult] = Field(description="各截面正截面配筋结果")
     shear: ShearDesignResult = Field(description="斜截面箍筋计算结果")
+
+
+class BeamFullResult(BaseModel):
+    """次梁完整计算结果（编排函数聚合，供 API 返回）。"""
+
+    load: BeamLoadOutput
+    span: BeamSpanOutput
+    net_span: BeamNetSpanOutput
+    converted: BeamLoadConvertOutput
+    internal_forces: BeamInternalForceOutput
+    reinforcement: BeamReinforcementOutput
