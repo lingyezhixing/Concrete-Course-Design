@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vitest/
+tsconfig.tsbuildinfo
+*.log
+.vscode/
+.idea/
+Dockerfile
+.dockerignore

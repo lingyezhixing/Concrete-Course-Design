@@ -253,6 +253,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '../components/common/PageHeader.vue'
 import { useProject } from '../composables/useProject'
+import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
 
 const router = useRouter()
 const { data, saving, isActive } = useProject()
@@ -311,20 +312,6 @@ function updateBar(
   if (!row.selected_bar || v == null) return
   row.selected_bar[field] = v
 }
-
-/** 配筋状态文案。 */
-function reinfLabel(status: string): string {
-  if (status === 'pass' || status === 'ok') return '满足'
-  if (status === 'review') return '复核'
-  if (status === 'fail' || status === 'insufficient') return '不足'
-  return status
-}
-/** 配筋状态对应 el-tag 类型。 */
-function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
-  if (status === 'pass' || status === 'ok' || status === '推荐') return 'success'
-  if (status === 'review' || status === '建议复核') return 'danger'
-  return 'danger'
-}
 </script>
 
 <style scoped>
@@ -380,13 +367,6 @@ function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
   margin: 0;
 }
 
-/* 4:1 布局 */
-.split {
-  display: grid;
-  grid-template-columns: 4fr 1fr;
-  gap: 16px;
-  align-items: start;
-}
 .data .block:first-child {
   margin-top: 0;
 }
@@ -442,60 +422,8 @@ function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
   padding-right: 4px;
 }
 
-/* 复核清单 */
-.checks {
-  position: sticky;
-  top: 16px;
-}
-.check-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.check-item {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-.check-icon {
-  font-size: 14px;
-  line-height: 1.4;
-  flex-shrink: 0;
-}
-.check-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.check-name {
-  font-size: 13px;
-  color: var(--foreground);
-}
-.check-detail {
-  font-size: 12px;
-  line-height: 1.4;
-  word-break: break-word;
-}
-.check-detail .clause {
-  color: var(--muted-foreground);
-  margin-right: 4px;
-}
-.empty-checks {
-  margin: 0;
-}
-
 /* 响应式：窄屏堆叠 */
 @media (max-width: 960px) {
-  .split {
-    grid-template-columns: 1fr;
-  }
-  .checks {
-    position: static;
-  }
   .force-split {
     grid-template-columns: 1fr;
   }

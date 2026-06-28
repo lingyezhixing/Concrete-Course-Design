@@ -83,7 +83,7 @@
             </template>
           </el-table-column>
           <el-table-column label="状态" min-width="80" align="center">
-            <template #default="{ row }"><el-tag :type="tagType(row.status)" size="small" effect="plain">{{ label(row.status) }}</el-tag></template>
+            <template #default="{ row }"><el-tag :type="reinfTagType(row.status)" size="small" effect="plain">{{ reinfLabel(row.status) }}</el-tag></template>
           </el-table-column>
         </el-table>
       </section>
@@ -109,6 +109,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '../components/common/PageHeader.vue'
 import { useProject } from '../composables/useProject'
+import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
 
 const router = useRouter()
 const { data, saving, isActive } = useProject()
@@ -134,17 +135,6 @@ const mbReady = computed(() => data.value?.main_beam?.initialized === true)
 function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefined): void {
   if (!row.selected_bar || v == null) return
   row.selected_bar[field] = v
-}
-function label(status: string): string {
-  if (status === 'pass' || status === 'ok') return '满足'
-  if (status === 'review') return '复核'
-  if (status === 'fail' || status === 'insufficient') return '不足'
-  return status
-}
-function tagType(status: string): 'success' | 'warning' | 'danger' {
-  if (status === 'pass' || status === 'ok' || status === '推荐') return 'success'
-  if (status === 'review' || status === '建议复核') return 'danger'
-  return 'danger'
 }
 </script>
 
