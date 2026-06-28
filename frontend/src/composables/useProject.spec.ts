@@ -49,9 +49,6 @@ vi.mock('../api/projects', () => {
     }),
     deleteProject: vi.fn(async () => undefined),
     calculate: vi.fn(async () => state.calcResult),
-    getChecks: vi.fn(async () => ({
-      slab: [{ name: 'M1 ξ ≤ ξb', status: 'pass', clause: 'c', detail: 'd' }],
-    })),
     listSnapshots: vi.fn(async () => []),
     createSnapshot: vi.fn(async (_pid: number, name?: string) => ({
       id: 10, project_id: 1, name: name ?? 's', data: {}, created_at: 't',

@@ -1,4 +1,4 @@
-"""/calculate 三构件（派生计算 + 门禁 + 超筋处理）与 /checks 板（休眠）。"""
+"""/calculate 三构件：派生计算 + 门禁 + 超筋处理。"""
 
 import pytest
 
@@ -89,22 +89,3 @@ def test_calculate_overreinforcement_returns_400(client, token):
     _save_params(client, token, pid, structure=bad_structure)
     res = client.post(f"/api/projects/{pid}/calculate", json={"page": "slab"}, headers=_auth(token))
     assert res.status_code == 400
-
-
-def test_checks_endpoint_after_calculate(client, token):
-    """休眠：/checks 仍可读 /calculate 落盘的板结果。"""
-    pid = _project(client, token)
-    _save_params(client, token, pid)
-    client.post(f"/api/projects/{pid}/calculate", json={"page": "slab"}, headers=_auth(token))
-    res = client.get(f"/api/projects/{pid}/checks", headers=_auth(token))
-    assert res.status_code == 200
-    body = res.json()
-    assert "slab" in body
-    assert len(body["slab"]) > 0
-
-
-def test_checks_empty_before_calculate(client, token):
-    pid = _project(client, token)
-    res = client.get(f"/api/projects/{pid}/checks", headers=_auth(token))
-    assert res.status_code == 200
-    assert res.json()["slab"] == []

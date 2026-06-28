@@ -65,18 +65,7 @@ export interface SnapshotPublic {
   created_at: string
 }
 
-export interface CheckItem {
-  name: string
-  status: 'pass' | 'review' | 'fail'
-  clause: string
-  detail: string
-}
-
 export type CalcPage = 'slab' | 'beam' | 'main_beam'
-
-export interface ChecksResponse {
-  slab: CheckItem[]
-}
 
 /** 空数据骨架（与后端 empty_data 一致），供前端初始化用。 */
 export function emptyProjectData(): ProjectData {
@@ -135,11 +124,6 @@ export async function calculate(
   page: CalcPage,
 ): Promise<Record<string, unknown>> {
   const { data } = await api.post<Record<string, unknown>>(`/projects/${id}/calculate`, { page })
-  return data
-}
-
-export async function getChecks(id: number): Promise<ChecksResponse> {
-  const { data } = await api.get<ChecksResponse>(`/projects/${id}/checks`)
   return data
 }
 

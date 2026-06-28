@@ -1,4 +1,4 @@
-"""项目生命周期路由：CRUD + /calculate（三构件派生计算）+ /checks（休眠）。
+"""项目生命周期路由：CRUD + /calculate（三构件派生计算）。
 
 全部 Depends(get_current_user)，按 user_id 隔离；非自有资源 404。
 """
@@ -6,8 +6,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.dependencies import get_current_user
-from app.checks import check_slab
 from app.data import project_repository as repo
+from app.materials import FC, FT, FY_BEAM, FY_SLAB, GAMMA_D
 from app.models.beam import BeamFullResult
 from app.models.main_beam import MainBeamFullResult
 from app.models.project import (
@@ -126,12 +126,7 @@ def calculate(
     structure = StructureParams(**data["structure"])
     loads = LoadsParams(**data["loads"])
 
-    # 材料强度与分项系数固定值（C20 fc=9.6, ft=1.10, I级 fy=270, II级 fy=300, γd=1.2）
-    FC = 9.6
-    FT = 1.10
-    FY_SLAB = 270
-    FY_BEAM = 300
-    GAMMA_D = 1.2
+    # 材料强度与分项系数固定值（统一来源 app.materials，见模块文档）
 
     try:
         if payload.page == "slab":
@@ -159,26 +154,10 @@ def calculate(
             detail={"error": "calc_failed", "message": f"计算失败（可能超筋或参数不合理）: {exc}"},
         ) from exc
 
-    # 落盘结果（供休眠的 /checks 读取；前端亦会 PATCH 覆盖，幂等）。
+    # 落盘结果（前端亦会 PATCH 覆盖，幂等）。
     dumped = result.model_dump()
     comp = data.setdefault(payload.page, {"result": {}, "initialized": False})
     comp["result"] = dumped
     comp["initialized"] = True
     repo.update_project(current_user["id"], project_id, data=data)
     return typed.model_validate(dumped)
-
-
-@router.get("/{project_id}/checks")
-def checks(project_id: int, current_user: dict = Depends(get_current_user)):
-    project = repo.get_project(current_user["id"], project_id)
-    if project is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
-
-    data = project["data"]
-    slab = data.get("slab", {})
-    if slab.get("initialized") and slab.get("result"):
-        full = SlabFullResult(**slab["result"])
-        slab_items = [item.model_dump() for item in check_slab(full, data["materials"])]
-    else:
-        slab_items = []
-    return {"slab": slab_items}
