@@ -1,6 +1,8 @@
 """主梁 — 荷载、内力、配筋求解器"""
 
 from app.models.main_beam import (
+    MainBeamFullResult,
+    MainBeamInput,
     MainBeamLoadOutput,
     MainBeamInternalForceOutput,
     MainBeamReinforcementOutput,
@@ -15,6 +17,7 @@ __all__ = [
     "calculate_main_beam_load",
     "calculate_main_beam_internal_forces",
     "calculate_main_beam_reinforcement",
+    "calculate_main_beam",
 ]
 
 
@@ -54,16 +57,23 @@ def calculate_main_beam_internal_forces(
 ) -> MainBeamInternalForceOutput:
     """主梁内力计算，4种荷载布置取最不利包络。
 
-    支座弯矩做边缘调整：M' = M + (b/2) × V₀
+    计算跨度（教师示例约定）：
+      - 边跨跨中（M1）：L₁ = 轴线跨 span
+      - 中跨跨中（M2）及支座（M_B, M_C）：L₂ = 1.05 × (轴线 − 柱宽)
+
+    支座弯矩做边缘调整：M' = M + (b/2) × V₀，
+    其中 V₀ 取简支梁支座剪力 (G+Q)/2（support_width 即柱宽，单位 mm）。
     """
-    env = calc_envelope(G=dead_load, Q=live_load, l0=span)
+    b_col = support_width / 1000.0       # 柱宽 (m)
+    l0_edge = span                        # 边跨：轴线跨
+    l0_interior = 1.05 * (span - b_col)   # 中跨及支座：1.05×(轴线−柱宽)
 
-    # 支座边缘弯矩调整（柱宽350mm）
-    bw = support_width / 1000.0
-    va = env["VA"]
+    env = calc_envelope(G=dead_load, Q=live_load, l0_edge=l0_edge, l0_interior=l0_interior)
 
-    m_b_adj = env["M_B"] + (bw / 2.0) * va
-    m_c_adj = env["M_C"] + (bw / 2.0) * va
+    # 支座边缘弯矩调整：V₀ = (G+Q)/2（简支梁支座剪力）
+    v0 = (dead_load + live_load) / 2.0
+    m_b_adj = env["M_B"] + (b_col / 2.0) * v0
+    m_c_adj = env["M_C"] + (b_col / 2.0) * v0
 
     return MainBeamInternalForceOutput(
         M1_max=round(env["M1"], 4),
@@ -136,4 +146,68 @@ def calculate_main_beam_reinforcement(
     return MainBeamReinforcementOutput(
         flexure=flexure_results,
         shear=shear_result,
+    )
+
+
+def calculate_main_beam(
+    inp: MainBeamInput,
+    fc: float,
+    fy: float,
+    gamma_d: float,
+    cover: float = 30.0,
+    bar_diameter: float = 20.0,
+    stirrup_diameter: int = 10,
+    stirrup_legs: int = 2,
+    fyv: float = 270,
+) -> MainBeamFullResult:
+    """主梁完整计算编排：荷载 → 内力 → 正截面 → 斜截面（含吊筋）。
+
+    集中力分量已在 ``MainBeamInput``（由 ``derive_main_beam_input`` 填好）；
+    本函数串联 load → reinforcement，并按次梁设计反力计算吊筋集中力。
+    课程简化：全部截面按 T 形（翼缘宽 bf = 次梁间距×1000）。
+    """
+    load = calculate_main_beam_load(
+        from_beam_dead=inp.from_beam_dead,
+        self_weight=inp.self_weight,
+        plaster=inp.plaster,
+        live_load=inp.live_load,
+        dead_load_factor=inp.dead_load_factor,
+        live_load_factor=inp.live_load_factor,
+    )
+
+    bf = inp.beam_spacing * 1000.0  # 翼缘宽 = 次梁间距 (mm)
+    hf = inp.slab_thickness
+
+    # 吊筋承担次梁传来的集中力（恒载+活载设计值），不含主梁自重/粉刷（分布荷载）
+    hanger_force = load.from_beam_dead * inp.dead_load_factor + inp.live_load * inp.live_load_factor
+
+    internal_forces = calculate_main_beam_internal_forces(
+        dead_load=load.dead_load_design,
+        live_load=load.live_load_design,
+        span=inp.span,
+        support_width=inp.column_width,
+    )
+
+    reinforcement = calculate_main_beam_reinforcement(
+        dead_load=load.dead_load_design,
+        live_load=load.live_load_design,
+        span=inp.span,
+        support_width=inp.column_width,
+        h=inp.beam_height,
+        b=inp.beam_width,
+        bf=bf,
+        hf=hf,
+        cover=cover,
+        bar_diameter=bar_diameter,
+        fc=fc,
+        fy=fy,
+        gamma_d=gamma_d,
+        stirrup_diameter=stirrup_diameter,
+        stirrup_legs=stirrup_legs,
+        fyv=fyv,
+        hanger_force=hanger_force,
+    )
+
+    return MainBeamFullResult(
+        load=load, internal_forces=internal_forces, reinforcement=reinforcement,
     )

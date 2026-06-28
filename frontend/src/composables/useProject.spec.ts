@@ -6,29 +6,35 @@ vi.mock('../api/projects', () => {
     patched: 0,
     calcResult: { sections: [{ name: 'M1' }] },
   }
+  const emptyData = () => ({
+    structure: {
+      L1: null, L2: null, slab_thickness: null,
+      beam_width: null, beam_height: null,
+      main_beam_width: null, main_beam_height: null,
+      column_width: null,
+      slab_spans: null, beam_spans: null, main_beam_spans: null,
+    },
+    materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
+    loads: {
+      reinforced_concrete_weight: null, terrazzo_surface: null,
+      plaster_thickness: null, plaster_weight: null, live_load: null,
+      dead_load_factor: 1.05, live_load_factor: 1.2,
+    },
+    slab: { result: null, initialized: false },
+    beam: { result: null, initialized: false },
+    main_beam: { result: null, initialized: false },
+  })
   return {
-    emptyProjectData: () => ({
-      materials: { fc: null, fy_slab: null, fy_beam: null, gamma_d: null },
-      slab: { input: {}, result: null, initialized: false },
-      beam: { input: {}, result: null, initialized: false },
-      main_beam: { input: {}, result: null, initialized: false },
-    }),
+    emptyProjectData: emptyData,
     listProjects: vi.fn(async () => []),
     createProject: vi.fn(async (name: string) => ({
-      id: 1, name, data: {
-        materials: { fc: null, fy_slab: null, fy_beam: null, gamma_d: null },
-        slab: { input: {}, result: null, initialized: false },
-        beam: { input: {}, result: null, initialized: false },
-        main_beam: { input: {}, result: null, initialized: false },
-      },
+      id: 1, name, data: emptyData(),
       created_at: 't', updated_at: 't', last_opened_at: null, has_uncommitted: false,
     })),
     getProject: vi.fn(async (id: number) => ({
       id, name: 'p', data: {
+        ...emptyData(),
         materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
-        slab: { input: { length: 6 }, result: null, initialized: false },
-        beam: { input: {}, result: null, initialized: false },
-        main_beam: { input: {}, result: null, initialized: false },
       },
       created_at: 't', updated_at: 't', last_opened_at: null, has_uncommitted: false,
     })),
@@ -36,12 +42,7 @@ vi.mock('../api/projects', () => {
       state.patched += 1
       return {
         id, name: 'p',
-        data: (payload.data as any) ?? {
-          materials: { fc: null, fy_slab: null, fy_beam: null, gamma_d: null },
-          slab: { input: {}, result: null, initialized: false },
-          beam: { input: {}, result: null, initialized: false },
-          main_beam: { input: {}, result: null, initialized: false },
-        },
+        data: (payload.data as any) ?? emptyData(),
         created_at: 't', updated_at: 't2', last_opened_at: null, has_uncommitted: true,
       }
     }),
@@ -56,10 +57,9 @@ vi.mock('../api/projects', () => {
     })),
     restoreSnapshot: vi.fn(async (pid: number) => ({
       id: pid, name: 'p', data: {
+        ...emptyData(),
         materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
-        slab: { input: {}, result: { x: 1 }, initialized: true },
-        beam: { input: {}, result: null, initialized: false },
-        main_beam: { input: {}, result: null, initialized: false },
+        slab: { result: { x: 1 }, initialized: true },
       },
       created_at: 't', updated_at: 't', last_opened_at: null, has_uncommitted: false,
     })),
@@ -99,8 +99,8 @@ describe('useProject', () => {
       await openProject(1)
       ;(projectsApi.patchProject as any).mockClear()
 
-      // 模拟编辑 input
-      data.value!.slab.input = { length: 7 }
+      // 模拟编辑结构参数
+      data.value!.structure.L1 = 30
       // 防抖未到，不应已保存
       expect(projectsApi.patchProject).not.toHaveBeenCalled()
 
@@ -111,8 +111,8 @@ describe('useProject', () => {
     }
   })
 
-  it('calculate flushes save, calls /calculate, writes result + initialized, refreshes checks', async () => {
-    const { openProject, calculate, data, checks } = useProject()
+  it('calculate flushes save, calls /calculate, writes result + initialized', async () => {
+    const { openProject, calculate, data } = useProject()
     await openProject(1)
     await calculate('slab')
     // 先 flush save（patchProject 被调用）
@@ -122,8 +122,6 @@ describe('useProject', () => {
     // 结果写回
     expect(data.value?.slab.initialized).toBe(true)
     expect((data.value?.slab.result as any)?.sections?.[0]?.name).toBe('M1')
-    // checks 刷新
-    expect(checks.value.slab?.[0]?.name).toContain('ξ')
   })
 
   it('restoreSnapshot updates data from response', async () => {

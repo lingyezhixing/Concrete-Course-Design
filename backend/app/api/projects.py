@@ -1,4 +1,4 @@
-"""项目生命周期路由：CRUD + （Task 8 追加）/calculate + /checks。
+"""项目生命周期路由：CRUD + /calculate（三构件派生计算）+ /checks（休眠）。
 
 全部 Depends(get_current_user)，按 user_id 隔离；非自有资源 404。
 """
@@ -8,15 +8,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.dependencies import get_current_user
 from app.checks import check_slab
 from app.data import project_repository as repo
+from app.models.beam import BeamFullResult
+from app.models.main_beam import MainBeamFullResult
 from app.models.project import (
     CalculateRequest,
-    MATERIALS_REQUIRED,
+    LOADS_REQUIRED,
     ProjectCreate,
     ProjectPatch,
     ProjectPublic,
-    SLAB_REQUIRED_INPUT,
+    STRUCTURE_REQUIRED,
+    StructureParams,
+    LoadsParams,
 )
-from app.models.slab import SlabFullResult, SlabInput
+from app.models.slab import SlabFullResult
+from app.solvers.beam.solver import calculate_beam
+from app.solvers.derive import (
+    derive_beam_input,
+    derive_main_beam_input,
+    derive_slab_input,
+)
+from app.solvers.main_beam.solver import calculate_main_beam
 from app.solvers.slab.solver import calculate_slab
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -89,34 +100,57 @@ def _missing(values: dict, required: list[str]) -> list[str]:
     return [k for k in required if values.get(k) is None]
 
 
-@router.post("/{project_id}/calculate", response_model=SlabFullResult)
+@router.post("/{project_id}/calculate")
 def calculate(
     project_id: int, payload: CalculateRequest, current_user: dict = Depends(get_current_user)
 ):
+    """按 page 由 structure+loads+materials 派生 Input 并计算，返回结果。
+
+    支持三页：slab / beam / main_beam。前端「确认计算」一键级联调用三次。
+    """
     project = repo.get_project(current_user["id"], project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
 
     data = project["data"]
-    if payload.page != "slab":
-        # 次梁/主梁暂未接通（待深入调查）。
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail=f"{payload.page} 计算尚未接通（本阶段仅支持 slab）",
-        )
 
-    missing = _missing(data.get("materials", {}), MATERIALS_REQUIRED)
-    missing += _missing(data.get("slab", {}).get("input", {}), SLAB_REQUIRED_INPUT)
+    # 门禁：structure + loads 必填字段齐全（材料与分项系数已固定在后端）
+    missing = _missing(data.get("structure", {}), STRUCTURE_REQUIRED)
+    missing += _missing(data.get("loads", {}), LOADS_REQUIRED)
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"error": "missing_required", "missing": missing},
         )
 
-    inp = SlabInput(**data["slab"]["input"])
-    mat = data["materials"]
+    structure = StructureParams(**data["structure"])
+    loads = LoadsParams(**data["loads"])
+
+    # 材料强度与分项系数固定值（C20 fc=9.6, I级 fy=270, II级 fy=300, γd=1.2）
+    FC = 9.6
+    FY_SLAB = 270
+    FY_BEAM = 300
+    GAMMA_D = 1.2
+
     try:
-        result = calculate_slab(inp, fc=mat["fc"], fy=mat["fy_slab"], gamma_d=mat["gamma_d"])
+        if payload.page == "slab":
+            result = calculate_slab(
+                derive_slab_input(structure, loads),
+                fc=FC, fy=FY_SLAB, gamma_d=GAMMA_D,
+            )
+            typed = SlabFullResult
+        elif payload.page == "beam":
+            result = calculate_beam(
+                derive_beam_input(structure, loads),
+                fc=FC, fy=FY_BEAM, gamma_d=GAMMA_D,
+            )
+            typed = BeamFullResult
+        else:  # main_beam
+            result = calculate_main_beam(
+                derive_main_beam_input(structure, loads),
+                fc=FC, fy=FY_BEAM, gamma_d=GAMMA_D,
+            )
+            typed = MainBeamFullResult
     except ValueError as exc:
         # 超筋（αs>0.5 → xi() sqrt 域错误）或其他参数不合理。
         raise HTTPException(
@@ -124,13 +158,13 @@ def calculate(
             detail={"error": "calc_failed", "message": f"计算失败（可能超筋或参数不合理）: {exc}"},
         ) from exc
 
-    # 写回结果，使 /checks 能在无需前端二次 PATCH 的情况下读到最新结果。
-    # 注：原始设计意图为「无副作用、由前端 PATCH 保存」，但 test_checks_endpoint_after_calculate
-    # 在 /calculate 后直接调用 /checks（中间无 PATCH）并期望非空，故此处落盘以同时满足两端语义。
-    data.setdefault("slab", {})["result"] = result.model_dump()
-    data["slab"]["initialized"] = True
+    # 落盘结果（供休眠的 /checks 读取；前端亦会 PATCH 覆盖，幂等）。
+    dumped = result.model_dump()
+    comp = data.setdefault(payload.page, {"result": {}, "initialized": False})
+    comp["result"] = dumped
+    comp["initialized"] = True
     repo.update_project(current_user["id"], project_id, data=data)
-    return result
+    return typed.model_validate(dumped)
 
 
 @router.get("/{project_id}/checks")

@@ -2,8 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { NAV_ITEMS } from './nav'
 
 describe('nav config', () => {
-  it('has 6 items', () => {
-    expect(NAV_ITEMS).toHaveLength(6)
+  it('has 8 items', () => {
+    expect(NAV_ITEMS).toHaveLength(8)
+  })
+
+  it('contains beam and main_beam pages', () => {
+    expect(NAV_ITEMS.some((i) => i.path === '/beam')).toBe(true)
+    expect(NAV_ITEMS.some((i) => i.path === '/main_beam')).toBe(true)
   })
 
   it('every item has path, title, and icon', () => {

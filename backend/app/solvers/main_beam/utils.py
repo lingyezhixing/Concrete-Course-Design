@@ -63,20 +63,25 @@ def get_main_beam_coefficients() -> dict[str, dict[str, float]]:
     return _MAIN_BEAM_COEFFICIENTS
 
 
-def calc_envelope(G: float, Q: float, l0: float) -> dict[str, float]:
+def calc_envelope(G: float, Q: float, l0_edge: float, l0_interior: float) -> dict[str, float]:
     """计算最不利组合包络。
 
-    弯矩：M = K₁·G·l₀ + K₂·Q·l₀
-    剪力：V = K₁·G + K₂·Q
+    弯矩：M = (K₁·G + K₂·Q) × l₀
+      - 边跨跨中（M1）用边跨计算跨度 l0_edge（= 轴线跨）
+      - 中跨跨中（M2）及支座（M_B, M_C）用中跨计算跨度
+        l0_interior = 1.05 × (轴线 − 柱宽)
+    剪力：V = K₁·G + K₂·Q（与跨度无关）
     """
     coeffs = get_main_beam_coefficients()
     result: dict[str, float] = {}
+    edge_keys = {"M1"}
 
     for key, g_case, q_case in _ENVELOPE_RULES:
         k1 = coeffs[key][g_case]
         k2 = coeffs[key][q_case]
         if key.startswith("M"):
-            result[key] = k1 * G * l0 + k2 * Q * l0
+            l0 = l0_edge if key in edge_keys else l0_interior
+            result[key] = (k1 * G + k2 * Q) * l0
         else:
             result[key] = k1 * G + k2 * Q
 

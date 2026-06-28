@@ -3,10 +3,10 @@
 import pytest
 
 from app.models.project import (
-    MATERIALS_REQUIRED,
+    LOADS_REQUIRED,
+    STRUCTURE_REQUIRED,
     ProjectCreate,
     ProjectPatch,
-    SLAB_REQUIRED_INPUT,
 )
 
 
@@ -22,10 +22,10 @@ def test_project_create_validates_name():
 
 
 def test_required_field_constants():
-    assert "length" in SLAB_REQUIRED_INPUT and "thickness" in SLAB_REQUIRED_INPUT
-    # 有默认值的字段不计入必需
-    assert "dead_load_factor" not in SLAB_REQUIRED_INPUT
-    assert {"fc", "fy_slab", "gamma_d"} <= set(MATERIALS_REQUIRED)
+    assert "L1" in STRUCTURE_REQUIRED and "slab_thickness" in STRUCTURE_REQUIRED
+    assert "live_load" in LOADS_REQUIRED
+    # 分项系数已固定在后端，不计入 LOADS_REQUIRED
+    assert "dead_load_factor" not in LOADS_REQUIRED
 
 
 def test_project_patch_all_optional():

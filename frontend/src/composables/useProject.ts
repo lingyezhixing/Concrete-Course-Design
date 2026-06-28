@@ -3,7 +3,6 @@ import { ref, watch } from 'vue'
 import * as projectsApi from '../api/projects'
 import type {
   CalcPage,
-  ChecksResponse,
   ProjectData,
   SnapshotPublic,
 } from '../api/projects'
@@ -12,7 +11,6 @@ import type {
 const projectId = ref<number | null>(null)
 const projectName = ref<string>('')
 const data = ref<ProjectData | null>(null)
-const checks = ref<ChecksResponse>({ slab: [] })
 const loading = ref(false)
 const saving = ref(false)
 
@@ -58,7 +56,6 @@ async function openProject(id: number): Promise<void> {
     projectId.value = res.id
     projectName.value = res.name
     data.value = res.data
-    checks.value = { slab: [] }
   } finally {
     loading.value = false
   }
@@ -71,7 +68,6 @@ async function createAndOpen(name: string): Promise<void> {
     projectId.value = res.id
     projectName.value = res.name
     data.value = res.data
-    checks.value = { slab: [] }
   } finally {
     loading.value = false
   }
@@ -85,29 +81,20 @@ function closeProject(): void {
   projectId.value = null
   projectName.value = ''
   data.value = null
-  checks.value = { slab: [] }
 }
 
 /**
- * 计算某页：先 flush 保存（确保后端读到最新 input）→ POST /calculate
+ * 计算某页：先 flush 保存（确保后端读到最新 structure/loads）→ POST /calculate
  * → 用返回结果更新 data[P].result + initialized。
  */
 async function calculate(page: CalcPage): Promise<void> {
   if (!isActive()) return
-  await saveNow() // 先把待存的 input 落库
+  await saveNow() // 先把待存的参数落库
   const result = await projectsApi.calculate(projectId.value!, page)
   if (data.value) {
     data.value[page].result = result
     data.value[page].initialized = true
   }
-  // 计算后立即刷新校核
-  await refreshChecks()
-}
-
-async function refreshChecks(): Promise<void> {
-  if (!isActive()) return
-  const res = await projectsApi.getChecks(projectId.value!)
-  checks.value = res
 }
 
 async function archive(name?: string): Promise<SnapshotPublic> {
@@ -120,7 +107,6 @@ async function restoreSnapshot(snapshotId: number): Promise<void> {
   if (!isActive()) return
   const res = await projectsApi.restoreSnapshot(projectId.value!, snapshotId)
   data.value = res.data
-  await refreshChecks()
 }
 
 // 自动保存：data 深度改动 → 防抖 PATCH（仅在有活动项目时）
@@ -136,7 +122,6 @@ export function useProject() {
     projectId,
     projectName,
     data,
-    checks,
     loading,
     saving,
     // 方法
@@ -146,7 +131,6 @@ export function useProject() {
     closeProject,
     saveNow,
     calculate,
-    refreshChecks,
     archive,
     restoreSnapshot,
     // 透传列表/快照管理（页面按需调用）

@@ -9,12 +9,27 @@ from app.data.connection import get_connection
 
 
 def empty_data() -> dict:
-    """新建项目的空数据骨架（与 spec §3.2 一致）。"""
+    """新建项目的空数据骨架：structure / materials / loads 三段 + 三构件结果。
+
+    各构件 Input 不再前端存储，由 /calculate 时从 structure+loads 派生。
+    """
     return {
-        "materials": {"fc": None, "fy_slab": None, "fy_beam": None, "gamma_d": None},
-        "slab": {"input": {}, "result": {}, "initialized": False},
-        "beam": {"input": {}, "result": {}, "initialized": False},
-        "main_beam": {"input": {}, "result": {}, "initialized": False},
+        "structure": {
+            "L1": None, "L2": None, "slab_thickness": None,
+            "beam_width": None, "beam_height": None,
+            "main_beam_width": None, "main_beam_height": None,
+            "column_width": None,
+            "slab_spans": None, "beam_spans": None, "main_beam_spans": None,
+        },
+        "materials": {"fc": 9.6, "fy_slab": 270, "fy_beam": 300, "gamma_d": 1.2},
+        "loads": {
+            "reinforced_concrete_weight": None, "terrazzo_surface": None,
+            "plaster_thickness": None, "plaster_weight": None, "live_load": None,
+            "dead_load_factor": 1.05, "live_load_factor": 1.20,
+        },
+        "slab": {"result": {}, "initialized": False},
+        "beam": {"result": {}, "initialized": False},
+        "main_beam": {"result": {}, "initialized": False},
     }
 
 

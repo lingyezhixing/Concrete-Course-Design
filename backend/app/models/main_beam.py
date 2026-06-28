@@ -12,19 +12,31 @@ __all__ = [
     "MainBeamLoadOutput",
     "MainBeamInternalForceOutput",
     "MainBeamReinforcementOutput",
+    "MainBeamFullResult",
 ]
 
 
 class MainBeamInput(BaseModel):
-    """主梁计算输入参数"""
+    """主梁计算输入参数（几何 + 由结构/荷载派生的集中力分量）。
 
-    span: float = Field(default=6.0, description="主梁跨度 (m)")
-    beam_width: float = Field(default=250, description="主梁宽度 (mm)")
-    beam_height: float = Field(default=500, description="主梁高度 (mm)")
-    slab_thickness: float = Field(default=80, description="板厚 (mm)")
-    column_width: float = Field(default=350, description="柱宽 (mm)")
-    spans: int = Field(default=3, description="跨数")
-    beam_spacing: float = Field(default=2.0, description="次梁间距 = 翼缘宽 (m)")
+    集中力分量由 ``derive_main_beam_input`` 从统一 structure+loads 推导，
+    不再由前端逐项填写。
+    """
+
+    # 几何
+    span: float = Field(description="主梁跨度 (m)")
+    beam_width: float = Field(description="主梁宽度 (mm)")
+    beam_height: float = Field(description="主梁高度 (mm)")
+    slab_thickness: float = Field(description="板厚 (mm)")
+    column_width: float = Field(description="柱宽 (mm)")
+    spans: int = Field(default=3, description="跨数（当前仅支持 3）")
+    beam_spacing: float = Field(description="次梁间距 (m) = 翼缘宽 bf/1000")
+
+    # 集中力分量（派生）
+    from_beam_dead: float = Field(description="次梁传来恒载集中力 (kN)")
+    self_weight: float = Field(description="主梁自重集中力 (kN)")
+    plaster: float = Field(description="主梁粉刷集中力 (kN)")
+    live_load: float = Field(description="活载集中力 (kN)")
 
     dead_load_factor: float = Field(default=1.05)
     live_load_factor: float = Field(default=1.20)
@@ -59,3 +71,11 @@ class MainBeamReinforcementOutput(BaseModel):
 
     flexure: list[BeamFlexureResult] = Field(description="正截面配筋")
     shear: ShearDesignResult = Field(description="斜截面箍筋及吊筋")
+
+
+class MainBeamFullResult(BaseModel):
+    """主梁完整计算结果（编排函数聚合，供 API 返回）。"""
+
+    load: MainBeamLoadOutput
+    internal_forces: MainBeamInternalForceOutput
+    reinforcement: MainBeamReinforcementOutput

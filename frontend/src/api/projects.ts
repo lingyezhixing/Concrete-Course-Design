@@ -7,14 +7,39 @@ export interface Materials {
   gamma_d: number | null
 }
 
+export interface Structure {
+  L1: number | null
+  L2: number | null
+  slab_thickness: number | null
+  beam_width: number | null
+  beam_height: number | null
+  main_beam_width: number | null
+  main_beam_height: number | null
+  column_width: number | null
+  slab_spans: number | null
+  beam_spans: number | null
+  main_beam_spans: number | null
+}
+
+export interface Loads {
+  reinforced_concrete_weight: number | null
+  terrazzo_surface: number | null
+  plaster_thickness: number | null
+  plaster_weight: number | null
+  live_load: number | null
+  dead_load_factor: number
+  live_load_factor: number
+}
+
 export interface ComponentState {
-  input: Record<string, unknown>
   result: Record<string, unknown> | null
   initialized: boolean
 }
 
 export interface ProjectData {
+  structure: Structure
   materials: Materials
+  loads: Loads
   slab: ComponentState
   beam: ComponentState
   main_beam: ComponentState
@@ -53,9 +78,21 @@ export interface ChecksResponse {
 
 /** 空数据骨架（与后端 empty_data 一致），供前端初始化用。 */
 export function emptyProjectData(): ProjectData {
-  const comp = (): ComponentState => ({ input: {}, result: null, initialized: false })
+  const comp = (): ComponentState => ({ result: null, initialized: false })
   return {
-    materials: { fc: null, fy_slab: null, fy_beam: null, gamma_d: null },
+    structure: {
+      L1: null, L2: null, slab_thickness: null,
+      beam_width: null, beam_height: null,
+      main_beam_width: null, main_beam_height: null,
+      column_width: null,
+      slab_spans: null, beam_spans: null, main_beam_spans: null,
+    },
+    materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
+    loads: {
+      reinforced_concrete_weight: null, terrazzo_surface: null,
+      plaster_thickness: null, plaster_weight: null, live_load: null,
+      dead_load_factor: 1.05, live_load_factor: 1.2,
+    },
     slab: comp(),
     beam: comp(),
     main_beam: comp(),

@@ -13,15 +13,13 @@
     </section>
 
     <!-- 守卫：未计算 -->
-    <section v-else-if="!result" class="block guard">
+    <section v-else-if="!slabReady" class="block guard">
       <p class="muted">请先在参数页确认计算</p>
       <el-button type="primary" @click="router.push('/params')">前往参数页</el-button>
     </section>
 
-    <!-- 主体：4:1 布局 -->
-    <div v-else class="split">
-      <!-- 左：可编辑结果（4） -->
-      <div class="data">
+    <!-- 主体：全宽可编辑结果 -->
+    <div v-else class="data">
         <!-- 荷载 -->
         <section class="block">
           <h2 class="block-title">荷载</h2>
@@ -230,39 +228,18 @@
             </el-table-column>
           </el-table>
         </section>
-      </div>
-
-      <!-- 右：复核清单（1） -->
-      <div class="checks">
-        <section class="block">
-          <h2 class="block-title">复核清单</h2>
-          <ul v-if="checks.slab.length" class="check-list">
-            <li v-for="(c, i) in checks.slab" :key="i" class="check-item">
-              <span class="check-icon">{{ statusLabel(c.status) }}</span>
-              <div class="check-body">
-                <span class="check-name">{{ c.name }}</span>
-                <span class="muted check-detail">
-                  <span v-if="c.clause" class="clause">{{ c.clause }}</span>
-                  {{ c.detail }}
-                </span>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="muted empty-checks">(无校核项)</p>
-        </section>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '../components/common/PageHeader.vue'
 import { useProject } from '../composables/useProject'
 
 const router = useRouter()
-const { data, checks, saving, isActive, refreshChecks } = useProject()
+const { data, saving, isActive } = useProject()
 
 /** 本地结果类型（后端 SlabFullResult 形状）。result 字段在 API 层为 Record<string,unknown>，
  *  这里精确化以便模板获得类型安全。 */
@@ -304,29 +281,11 @@ interface SlabResult {
   reinforcement: { sections: ReinfSection[] }
 }
 
-/** 结果对象（已通过 initialized 守卫，非空）。 */
-const result = computed<SlabResult | null>(() =>
-  data.value?.slab.result as SlabResult | undefined ?? null,
+/** 结果对象（守卫 slabReady 确保渲染时已初始化，type-safe cast 兼容空状态）。 */
+const result = computed<SlabResult>(() =>
+  data.value?.slab.result as unknown as SlabResult ?? {} as SlabResult,
 )
-
-// 实时复核清单：挂载时刷新一次；result 深度改动 → 防抖 1s 刷新。
-let checkTimer: ReturnType<typeof setTimeout> | null = null
-watch(
-  () => data.value?.slab.result,
-  () => {
-    if (checkTimer) clearTimeout(checkTimer)
-    if (!isActive() || !data.value?.slab.initialized) return
-    checkTimer = setTimeout(() => {
-      checkTimer = null
-      void refreshChecks()
-    }, 1000)
-  },
-  { deep: true },
-)
-
-onMounted(() => {
-  if (isActive() && data.value?.slab.initialized) void refreshChecks()
-})
+const slabReady = computed(() => data.value?.slab?.initialized === true)
 
 /** 修改选筋子字段（diameter/spacing）。 */
 function updateBar(
@@ -338,12 +297,6 @@ function updateBar(
   row.selected_bar[field] = v
 }
 
-function statusTag(status: string): 'success' | 'warning' | 'danger' {
-  return status === 'pass' ? 'success' : status === 'review' ? 'warning' : 'danger'
-}
-function statusLabel(status: string): string {
-  return status === 'pass' ? '✅' : status === 'review' ? '⚠️' : '❌'
-}
 /** 配筋状态文案。 */
 function reinfLabel(status: string): string {
   if (status === 'pass' || status === 'ok') return '满足'
@@ -357,8 +310,6 @@ function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
   if (status === 'review') return 'warning'
   return 'danger'
 }
-// 引用以避免未使用告警（statusTag 在模板外保留供扩展使用）
-void statusTag
 </script>
 
 <style scoped>

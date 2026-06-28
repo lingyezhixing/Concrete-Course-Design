@@ -69,7 +69,7 @@ def calculate_spans(inp: SlabInput) -> SlabSpanOutput:
     边跨:   l0 = L / n - 0.120 + h / 2
     其中 0.120m 为规范固定值，h 为板厚（mm → m）
     """
-    middle_span = inp.length / inp.spans
+    middle_span = inp.width / inp.spans
     edge_span = middle_span - 0.120 + inp.thickness / 2000.0
 
     return SlabSpanOutput(
@@ -86,7 +86,7 @@ def calculate_net_spans(inp: SlabInput) -> SlabNetSpanOutput:
     其中 b 为支座宽度（mm → m），0.120m 为规范固定值
     """
     b = inp.support_width / 1000.0
-    span_unit = inp.length / inp.spans
+    span_unit = inp.width / inp.spans
 
     middle_net = span_unit - b
     edge_net = span_unit - 0.120 - b / 2.0
