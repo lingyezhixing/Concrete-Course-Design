@@ -76,10 +76,21 @@
                 class="num"
               />
             </div>
-            <div class="field full">
-              <label class="lbl">总荷载设计值（kN/m）</label>
+            <!-- 折算荷载 -->
+            <div class="field">
+              <label class="lbl">折算恒荷载 g（kN/m）</label>
               <el-input-number
-                v-model="result.load.total_load"
+                v-model="result.converted.converted_dead"
+                :precision="3"
+                :controls="false"
+                size="small"
+                class="num"
+              />
+            </div>
+            <div class="field">
+              <label class="lbl">折算活荷载 q（kN/m）</label>
+              <el-input-number
+                v-model="result.converted.converted_live"
                 :precision="3"
                 :controls="false"
                 size="small"
@@ -119,47 +130,52 @@
         <!-- 内力 -->
         <section class="block">
           <h2 class="block-title">内力</h2>
-          <h3 class="sub-title">弯矩 M（kN·m/m）</h3>
-          <el-table
-            :data="result.internal_forces.moments"
-            size="small"
-            class="compact-table"
-            border
-          >
-            <el-table-column prop="name" label="截面" min-width="160" />
-            <el-table-column label="弯矩值" min-width="140">
-              <template #default="{ row }">
-                <el-input-number
-                  v-model="row.value"
-                  :precision="3"
-                  :controls="false"
-                  size="small"
-                  class="num"
-                />
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <h3 class="sub-title">剪力 V（kN/m）</h3>
-          <el-table
-            :data="result.internal_forces.shears"
-            size="small"
-            class="compact-table"
-            border
-          >
-            <el-table-column prop="name" label="截面" min-width="160" />
-            <el-table-column label="剪力值" min-width="140">
-              <template #default="{ row }">
-                <el-input-number
-                  v-model="row.value"
-                  :precision="3"
-                  :controls="false"
-                  size="small"
-                  class="num"
-                />
-              </template>
-            </el-table-column>
-          </el-table>
+          <div class="force-split">
+            <div class="force-table">
+              <h3 class="sub-title">弯矩 M（kN·m/m）</h3>
+              <el-table
+                :data="result.internal_forces.moments"
+                size="small"
+                class="compact-table"
+                border
+              >
+                <el-table-column prop="name" label="截面" min-width="140" />
+                <el-table-column label="弯矩值" min-width="120">
+                  <template #default="{ row }">
+                    <el-input-number
+                      v-model="row.value"
+                      :precision="3"
+                      :controls="false"
+                      size="small"
+                      class="num"
+                    />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <div class="force-table">
+              <h3 class="sub-title">剪力 V（kN/m）</h3>
+              <el-table
+                :data="result.internal_forces.shears"
+                size="small"
+                class="compact-table"
+                border
+              >
+                <el-table-column prop="name" label="截面" min-width="140" />
+                <el-table-column label="剪力值" min-width="120">
+                  <template #default="{ row }">
+                    <el-input-number
+                      v-model="row.value"
+                      :precision="3"
+                      :controls="false"
+                      size="small"
+                      class="num"
+                    />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </section>
 
         <!-- 配筋 -->
@@ -272,7 +288,6 @@ interface SlabResult {
     dead_load_design: number
     live_load_standard: number
     live_load_design: number
-    total_load: number
   }
   span: { middle_span: number; edge_span: number }
   net_span: { middle_net: number; edge_net: number }
@@ -332,10 +347,18 @@ function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
   color: var(--foreground);
 }
 .sub-title {
-  margin: 12px 0 6px;
+  margin: 0 0 6px;
   font-size: 13px;
   font-weight: 600;
   color: var(--muted-foreground);
+}
+.force-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.force-table {
+  min-width: 0;
 }
 .muted {
   color: var(--muted-foreground);
@@ -472,6 +495,9 @@ function reinfTagType(status: string): 'success' | 'warning' | 'danger' {
   }
   .checks {
     position: static;
+  }
+  .force-split {
+    grid-template-columns: 1fr;
   }
 }
 </style>

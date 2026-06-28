@@ -52,20 +52,26 @@
       <!-- 内力 -->
       <section class="block">
         <h2 class="block-title">内力</h2>
-        <h3 class="sub-title">弯矩 M（kN·m）</h3>
-        <el-table :data="result.internal_forces.moments" size="small" class="compact-table" border>
-          <el-table-column prop="name" label="截面" min-width="120" />
-          <el-table-column label="弯矩值" min-width="140">
-            <template #default="{ row }"><el-input-number v-model="row.value" :precision="3" :controls="false" size="small" class="num" /></template>
-          </el-table-column>
-        </el-table>
-        <h3 class="sub-title">剪力 V（kN）</h3>
-        <el-table :data="result.internal_forces.shears" size="small" class="compact-table" border>
-          <el-table-column prop="name" label="截面" min-width="120" />
-          <el-table-column label="剪力值" min-width="140">
-            <template #default="{ row }"><el-input-number v-model="row.value" :precision="3" :controls="false" size="small" class="num" /></template>
-          </el-table-column>
-        </el-table>
+        <div class="force-split">
+          <div class="force-table">
+            <h3 class="sub-title">弯矩 M（kN·m）</h3>
+            <el-table :data="result.internal_forces.moments" size="small" class="compact-table" border>
+              <el-table-column prop="name" label="截面" min-width="120" />
+              <el-table-column label="弯矩值" min-width="140">
+                <template #default="{ row }"><el-input-number v-model="row.value" :precision="3" :controls="false" size="small" class="num" /></template>
+              </el-table-column>
+            </el-table>
+          </div>
+          <div class="force-table">
+            <h3 class="sub-title">剪力 V（kN）</h3>
+            <el-table :data="result.internal_forces.shears" size="small" class="compact-table" border>
+              <el-table-column prop="name" label="截面" min-width="120" />
+              <el-table-column label="剪力值" min-width="140">
+                <template #default="{ row }"><el-input-number v-model="row.value" :precision="3" :controls="false" size="small" class="num" /></template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
       </section>
 
       <!-- 正截面配筋 -->
@@ -165,7 +171,9 @@ function tagType(status: string): 'success' | 'warning' | 'danger' {
 .beam { width: 100%; }
 .block { margin-top: 20px; padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
 .block-title { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--foreground); }
-.sub-title { margin: 12px 0 6px; font-size: 13px; font-weight: 600; color: var(--muted-foreground); }
+.sub-title { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted-foreground); }
+.force-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.force-table { min-width: 0; }
 .muted { color: var(--muted-foreground); font-size: 13px; }
 .save-state { font-size: 12px; color: var(--muted-foreground); }
 .guard { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
@@ -183,4 +191,8 @@ function tagType(status: string): 'success' | 'warning' | 'danger' {
 .bar-cell { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
 .bar-num { width: 56px; }
 .bar-num :deep(input) { text-align: center; padding-left: 4px; padding-right: 4px; }
+
+@media (max-width: 960px) {
+  .force-split { grid-template-columns: 1fr; }
+}
 </style>
