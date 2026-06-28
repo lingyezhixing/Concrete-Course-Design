@@ -15,11 +15,10 @@ const routes: RouteRecordRaw[] = [
     component: AppLayout,
     children: [
       { path: '', name: 'overview', component: () => import('../views/Overview.vue') },
-      { path: 'materials', name: 'materials', component: () => import('../views/Materials.vue') },
+      { path: 'params', name: 'params', component: () => import('../views/Params.vue') },
       { path: 'slab', name: 'slab', component: () => import('../views/Slab.vue') },
-      { path: 'secondary-beam', name: 'secondary-beam', component: () => import('../views/SecondaryBeam.vue') },
-      { path: 'main-beam', name: 'main-beam', component: () => import('../views/MainBeam.vue') },
       { path: 'report', name: 'report', component: () => import('../views/Report.vue') },
+      { path: 'archive', name: 'archive', component: () => import('../views/Archive.vue') },
       { path: 'settings', name: 'settings', component: () => import('../views/Settings.vue') },
     ],
   },
