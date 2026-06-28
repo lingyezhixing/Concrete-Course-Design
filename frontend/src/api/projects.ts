@@ -1,12 +1,5 @@
 import api from './index'
 
-export interface Materials {
-  fc: number | null
-  fy_slab: number | null
-  fy_beam: number | null
-  gamma_d: number | null
-}
-
 export interface Structure {
   L1: number | null
   L2: number | null
@@ -29,8 +22,6 @@ export interface Loads {
   plaster_thickness: number | null
   plaster_weight: number | null
   live_load: number | null
-  dead_load_factor: number
-  live_load_factor: number
 }
 
 export interface ComponentState {
@@ -40,7 +31,6 @@ export interface ComponentState {
 
 export interface ProjectData {
   structure: Structure
-  materials: Materials
   loads: Loads
   slab: ComponentState
   beam: ComponentState
@@ -79,11 +69,9 @@ export function emptyProjectData(): ProjectData {
       slab_spans: null, beam_spans: null, main_beam_spans: null,
       beam_stirrup_diameter: null, main_beam_stirrup_diameter: null,
     },
-    materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
     loads: {
       reinforced_concrete_weight: null, terrazzo_surface: null,
       plaster_thickness: null, plaster_weight: null, live_load: null,
-      dead_load_factor: 1.05, live_load_factor: 1.2,
     },
     slab: comp(),
     beam: comp(),

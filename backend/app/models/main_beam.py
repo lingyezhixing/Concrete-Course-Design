@@ -42,7 +42,7 @@ class MainBeamInput(BaseModel):
     live_load_factor: float = Field(default=1.20)
 
     # 构造参数
-    stirrup_diameter: int | None = Field(default=None, description="箍筋直径 (mm)")
+    stirrup_diameter: int = Field(description="箍筋直径 (mm)，必填")
 
 
 class MainBeamLoadOutput(BaseModel):

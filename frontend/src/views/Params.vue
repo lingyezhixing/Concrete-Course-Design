@@ -110,6 +110,7 @@ const REQUIRED_STRUCTURE: ReadonlyArray<keyof Structure> = [
   'L1', 'L2', 'slab_thickness', 'beam_width', 'beam_height',
   'main_beam_width', 'main_beam_height', 'column_width',
   'slab_spans', 'beam_spans', 'main_beam_spans',
+  'beam_stirrup_diameter', 'main_beam_stirrup_diameter',
 ]
 const REQUIRED_LOADS: ReadonlyArray<keyof Loads> = [
   'reinforced_concrete_weight', 'terrazzo_surface',

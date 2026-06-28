@@ -16,11 +16,10 @@ from app.solvers.slab.solver import (
 
 
 def _inp():
-    # length≠width 以暴露跨度方向：板跨度沿 width(L₂) 方向，middle_span = width/spans = 6/3 = 2m；
-    # length(L₁) 平行于次梁，仅作板带长边，不参与跨度计算。
-    # 80mm 板上若误用 length/大跨，会使 αs>0.5 触发 sqrt 定义域错误（输入越界，非本编排函数职责）。
+    # 板跨度沿 width(L₂) 方向：middle_span = width/spans = 6/3 = 2m。
+    # 80mm 板上若误用大跨，会使 αs>0.5 触发 sqrt 定义域错误（输入越界，非本编排函数职责）。
     return SlabInput(
-        length=12.0, width=6.0, thickness=80, support_width=200, spans=3,
+        width=6.0, thickness=80, support_width=200, spans=3,
         reinforced_concrete_weight=25.0, terrazzo_surface=0.65,
         plaster_thickness=20, plaster_weight=17.0, live_load=2.0,
     )
@@ -58,19 +57,18 @@ def test_reinforcement_uses_internal_moments_and_default_cover():
     assert "M1" in names and "M_B" in names
 
 
-def test_spans_derive_from_width_not_length():
-    """板跨度沿 width(L₂) 方向：middle_span = width/spans，而非 length/spans。
+def test_spans_derive_from_width():
+    """板跨度沿 width(L₂) 方向：middle_span = width/spans。
 
-    板以次梁为支座，跨度方向 ⊥ 次梁 = ∥ 主梁 = L₂(width)。length(L₁) 平行次梁，
-    仅作板带长边。该测试用 length≠width 区分两者（此前 length=width=6 掩盖了方向）。
+    板以次梁为支座，跨度方向 ⊥ 次梁 = ∥ 主梁 = L₂(width)。
     """
     inp = SlabInput(
-        length=12.0, width=6.0, thickness=80, support_width=200, spans=3,
+        width=6.0, thickness=80, support_width=200, spans=3,
         reinforced_concrete_weight=25.0, terrazzo_surface=0.65,
         plaster_thickness=20, plaster_weight=17.0, live_load=2.0,
     )
     spans = calculate_spans(inp)
-    # 6/3 = 2.0（来自 width），不是 12/3 = 4.0（length）
+    # 6/3 = 2.0（来自 width）
     assert spans.middle_span == pytest.approx(2.0, abs=0.001)
     # edge_span = middle − 0.120 + h/2 = 2.0 − 0.12 + 0.04 = 1.92
     assert spans.edge_span == pytest.approx(1.92, abs=0.001)

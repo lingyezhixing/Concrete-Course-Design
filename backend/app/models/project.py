@@ -24,8 +24,8 @@ class StructureParams(BaseModel):
     slab_spans: int = Field(description="板跨数（>5 按五跨连续板查系数）")
     beam_spans: int = Field(description="次梁跨数")
     main_beam_spans: int = Field(description="主梁跨数（当前仅支持 3）")
-    beam_stirrup_diameter: int | None = Field(default=None, description="次梁箍筋直径 (mm)")
-    main_beam_stirrup_diameter: int | None = Field(default=None, description="主梁箍筋直径 (mm)")
+    beam_stirrup_diameter: int = Field(description="次梁箍筋直径 (mm)，必填")
+    main_beam_stirrup_diameter: int = Field(description="主梁箍筋直径 (mm)，必填")
 
 
 class LoadsParams(BaseModel):
@@ -44,6 +44,7 @@ STRUCTURE_REQUIRED = [
     "beam_width", "beam_height",
     "main_beam_width", "main_beam_height",
     "column_width", "slab_spans", "beam_spans", "main_beam_spans",
+    "beam_stirrup_diameter", "main_beam_stirrup_diameter",
 ]
 LOADS_REQUIRED = [
     "reinforced_concrete_weight", "terrazzo_surface",

@@ -204,7 +204,7 @@ def calculate_main_beam(
         ft=ft,
         fy=fy,
         gamma_d=gamma_d,
-        stirrup_diameter=inp.stirrup_diameter or 10,
+        stirrup_diameter=inp.stirrup_diameter,
         stirrup_legs=stirrup_legs,
         fyv=fyv,
         hanger_force=hanger_force,

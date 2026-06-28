@@ -18,6 +18,7 @@ def _inp():
     return BeamInput(
         span=6.0, beam_width=200, beam_height=500, slab_thickness=80,
         slab_dead_load_standard=3.0, live_load_per_area=2.0, beam_spacing=2.0,
+        stirrup_diameter=6,
     )
 
 

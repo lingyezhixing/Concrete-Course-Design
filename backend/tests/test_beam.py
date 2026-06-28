@@ -133,6 +133,7 @@ class TestBeamLoad:
             plaster_weight=17.0,  # kN/m³
             dead_load_factor=1.05,
             live_load_factor=1.20,
+            stirrup_diameter=6,
         )
 
         result = calculate_beam_load(inp)
@@ -191,6 +192,7 @@ class TestBeamSpan:
             support_width=250,  # 主梁宽 (mm)
             span=7.2,  # 跨长 (m)
             bearing_length=240,  # 搁置长度 (mm)
+            stirrup_diameter=6,
         )
 
         spans = calculate_beam_spans(inp)
@@ -230,6 +232,7 @@ class TestBeamInternalForce:
             support_width=250,
             span=7.2,
             spans=5,
+            stirrup_diameter=6,
         )
 
         load = calculate_beam_load(inp)

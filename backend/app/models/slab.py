@@ -19,7 +19,6 @@ class SlabInput(BaseModel):
     """板计算输入参数"""
 
     # 几何参数
-    length: float = Field(description="板的长度 (m)")
     width: float = Field(description="板的宽度 (m)")
     thickness: float = Field(description="板的厚度 (mm)")
     support_width: float = Field(description="支座宽度 / 次梁宽度 (mm)")

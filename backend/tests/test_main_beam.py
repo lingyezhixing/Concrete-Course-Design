@@ -212,6 +212,7 @@ class TestMainBeamOrchestration:
             span=6.0, beam_width=300, beam_height=600, slab_thickness=120,
             column_width=350, spans=3, beam_spacing=2.0,
             from_beam_dead=59.4228, self_weight=7.2, plaster=0.4896, live_load=48.0,
+            stirrup_diameter=10,
         )
         result = calculate_main_beam(inp, fc=9.6, fy=300, gamma_d=1.2)
         assert result.load.dead_load_standard == pytest.approx(67.1124, abs=0.001)
@@ -227,6 +228,7 @@ class TestMainBeamOrchestration:
             span=6.0, beam_width=300, beam_height=600, slab_thickness=120,
             column_width=350, spans=3, beam_spacing=2.0,
             from_beam_dead=59.4228, self_weight=7.2, plaster=0.4896, live_load=48.0,
+            stirrup_diameter=10,
         )
         result = calculate_main_beam(inp, fc=9.6, fy=300, gamma_d=1.2)
         # 内力在 reinforcement 内部计算

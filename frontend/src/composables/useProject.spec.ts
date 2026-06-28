@@ -15,11 +15,9 @@ vi.mock('../api/projects', () => {
       slab_spans: null, beam_spans: null, main_beam_spans: null,
       beam_stirrup_diameter: null, main_beam_stirrup_diameter: null,
     },
-    materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
     loads: {
       reinforced_concrete_weight: null, terrazzo_surface: null,
       plaster_thickness: null, plaster_weight: null, live_load: null,
-      dead_load_factor: 1.05, live_load_factor: 1.2,
     },
     slab: { result: null, initialized: false },
     beam: { result: null, initialized: false },
@@ -35,7 +33,6 @@ vi.mock('../api/projects', () => {
     getProject: vi.fn(async (id: number) => ({
       id, name: 'p', data: {
         ...emptyData(),
-        materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
       },
       created_at: 't', updated_at: 't', last_opened_at: null, has_uncommitted: false,
     })),
@@ -56,7 +53,6 @@ vi.mock('../api/projects', () => {
     restoreSnapshot: vi.fn(async (pid: number) => ({
       id: pid, name: 'p', data: {
         ...emptyData(),
-        materials: { fc: 9.6, fy_slab: 270, fy_beam: 300, gamma_d: 1.2 },
         slab: { result: { x: 1 }, initialized: true },
       },
       created_at: 't', updated_at: 't', last_opened_at: null, has_uncommitted: false,
@@ -86,7 +82,7 @@ describe('useProject', () => {
     await openProject(1)
     expect(projectId.value).toBe(1)
     expect(isActive()).toBe(true)
-    expect(data.value?.materials.fc).toBe(9.6)
+    expect(data.value?.slab.initialized).toBe(false)
     expect(projectsApi.getProject).toHaveBeenCalledWith(1)
   })
 

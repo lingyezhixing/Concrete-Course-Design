@@ -189,7 +189,7 @@ def calculate_beam(
     max_shear = max((abs(s.value) for s in internal.shears), default=0.0)
     shear = calc_beam_shear(
         max_shear=max_shear, b=b, h=h, cover=cover, bar_diameter=bar_diameter,
-        ft=ft, fy=fy, gamma_d=gamma_d, stirrup_diameter=inp.stirrup_diameter or 6,
+        ft=ft, fy=fy, gamma_d=gamma_d, stirrup_diameter=inp.stirrup_diameter,
     )
 
     return BeamFullResult(

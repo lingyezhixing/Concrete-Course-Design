@@ -24,17 +24,16 @@ STRUCTURE = {
     "beam_width": 200, "beam_height": 500,
     "main_beam_width": 300, "main_beam_height": 600,
     "column_width": 350, "slab_spans": 9, "beam_spans": 5, "main_beam_spans": 3,
+    "beam_stirrup_diameter": 6, "main_beam_stirrup_diameter": 10,
 }
-MATERIALS = {"fc": 9.6, "fy_slab": 270, "fy_beam": 300, "gamma_d": 1.2}
 LOADS = {
     "reinforced_concrete_weight": 25.0, "terrazzo_surface": 0.65,
     "plaster_thickness": 15, "plaster_weight": 17.0, "live_load": 4.0,
-    "dead_load_factor": 1.05, "live_load_factor": 1.2,
 }
 
 
 def _save_params(client, token, pid, **overrides):
-    data = {"materials": MATERIALS, "structure": STRUCTURE, "loads": LOADS}
+    data = {"structure": STRUCTURE, "loads": LOADS}
     data.update(overrides)
     client.patch(f"/api/projects/{pid}", json={"data": data}, headers=_auth(token))
 
@@ -73,7 +72,7 @@ def test_calculate_gating_missing_structure(client, token):
     pid = _project(client, token)
     client.patch(
         f"/api/projects/{pid}",
-        json={"data": {"materials": MATERIALS, "loads": LOADS, "structure": {"L1": 30.0}}},
+        json={"data": {"loads": LOADS, "structure": {"L1": 30.0}}},
         headers=_auth(token),
     )
     res = client.post(f"/api/projects/{pid}/calculate", json={"page": "slab"}, headers=_auth(token))

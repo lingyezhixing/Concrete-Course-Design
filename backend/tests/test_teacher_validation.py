@@ -25,7 +25,7 @@ class TestSlabMatchesTeacher:
 
     def _inp(self):
         return SlabInput(
-            length=30.0, width=18.0, thickness=120, support_width=200, spans=9,
+            width=18.0, thickness=120, support_width=200, spans=9,
             reinforced_concrete_weight=25.0, terrazzo_surface=0.65,
             plaster_thickness=15, plaster_weight=17.0, live_load=4.0,
             dead_load_factor=1.05, live_load_factor=1.2,
@@ -67,6 +67,7 @@ class TestBeamMatchesTeacher:
             slab_dead_load_standard=3.905, live_load_per_area=4.0,
             concrete_weight=25.0, plaster_thickness=15, plaster_weight=17.0,
             dead_load_factor=1.05, live_load_factor=1.2,
+            stirrup_diameter=6,
         )
 
     def test_load(self):

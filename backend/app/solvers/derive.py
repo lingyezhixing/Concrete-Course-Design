@@ -47,7 +47,6 @@ def derive_slab_input(s: StructureParams, l: LoadsParams) -> SlabInput:
     beam_spacing = s.L2 / s.slab_spans
     model_spans = min(s.slab_spans, 5)
     return SlabInput(
-        length=s.L1,  # 板带长边，求解器不参与跨度计算（仅 width 用）
         width=beam_spacing * model_spans,  # → l0 = beam_spacing
         thickness=s.slab_thickness,
         support_width=s.beam_width,  # 板支座 = 次梁宽
