@@ -190,7 +190,6 @@ class TestBeamSpan:
             live_load_factor=1.20,
             support_width=250,  # 主梁宽 (mm)
             span=7.2,  # 跨长 (m)
-            wall_thickness=370,  # 墙体厚度 (mm)
             bearing_length=240,  # 搁置长度 (mm)
         )
 

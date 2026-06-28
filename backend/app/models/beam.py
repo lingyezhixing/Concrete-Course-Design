@@ -27,7 +27,6 @@ class BeamInput(BaseModel):
     slab_thickness: float = Field(description="板厚 (mm)")
     support_width: float = Field(default=250, description="支座宽度 / 主梁宽度 (mm)")
     spans: int = Field(default=5, description="跨数")
-    wall_thickness: float = Field(default=370, description="墙体厚度 (mm)")
     bearing_length: float = Field(default=240, description="次梁搁置长度 (mm)")
 
     # 荷载参数（来自板计算的输出 + 次梁自身参数）
