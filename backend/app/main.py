@@ -31,5 +31,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 from app.api import projects  # noqa: E402  (Task 9 统一上移到顶部)
+from app.api import snapshots  # noqa: E402  (Task 9 统一上移到顶部)
 
 app.include_router(projects.router, prefix="/api")
+app.include_router(snapshots.router, prefix="/api")
