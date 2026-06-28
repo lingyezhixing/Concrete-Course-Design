@@ -8,11 +8,11 @@
 |------|------|
 | **后端** | Python 3.12+ / FastAPI / Uvicorn |
 | **数据库** | SQLite (raw sqlite3) |
-| **认证** | JWT (python-jose) + bcrypt 密码哈希 |
+| **认证** | JWT (PyJWT) + bcrypt 密码哈希 |
 | **前端** | Vue 3 + TypeScript + Vite |
 | **UI** | Element Plus + Lucide icons |
 | **主题** | 三主题令牌体系（暗/亮/暖），color-mix 桥接 Element Plus 变量 |
-| **测试** | 后端 pytest（16 测试文件），前端 Vitest（10 spec 文件） |
+| **测试** | 后端 pytest（13 测试文件），前端 Vitest（9 spec 文件） |
 | **容器化** | Docker Compose (Nginx + Uvicorn) |
 
 ## 快速启动
@@ -21,7 +21,7 @@
 
 ```bash
 cd backend
-pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -68,7 +68,6 @@ docker compose up -d
 │   │   ├── config.py               # 配置（SECRET_KEY、CORS 等）
 │   │   ├── logging_config.py       # 文件/控制台分级日志（按尺寸轮转）
 │   │   ├── security.py             # 密码哈希与 JWT 工具函数
-│   │   ├── checks.py               # 规范检查端点（休眠中）
 │   │   ├── api/
 │   │   │   ├── health.py           # GET /api/health 健康检查
 │   │   │   ├── projects.py         # 项目 CRUD + 计算路由
@@ -92,14 +91,13 @@ docker compose up -d
 │   │   └── data/
 │   │       ├── connection.py       # SQLite 连接
 │   │       └── project_repository.py # 项目/快照数据访问
-│   ├── tests/                      # 16 个 pytest 测试文件
+│   ├── tests/                      # 13 个 pytest 测试文件
 │   │   ├── conftest.py             # 共享 fixture（DB 隔离、认证客户端）
 │   │   ├── test_auth.py            # 认证全链路测试
 │   │   ├── test_common.py          # 共享 RC 公式测试
 │   │   ├── test_slab_*.py          # 板计算测试（工具函数/配筋/编排）
 │   │   ├── test_beam*.py           # 次梁计算测试
 │   │   ├── test_main_beam.py       # 主梁计算测试
-│   │   ├── test_checks.py          # 规范检查测试
 │   │   ├── test_project_repository.py # 仓库层测试
 │   │   ├── test_projects_api.py    # 项目 API 测试
 │   │   ├── test_snapshots_api.py   # 快照 API 测试
@@ -118,7 +116,7 @@ docker compose up -d
 │   │   │   └── tokens.css          # 三主题令牌 + 全局样式
 │   │   ├── components/
 │   │   │   ├── layout/             # AppLayout, AppHeader, AppSidebar, UserDropdown
-│   │   │   └── common/             # PageHeader, ThemeSwitcher
+│   │   │   └── common/             # PageHeader
 │   │   ├── composables/            # 状态管理（模块级单例）
 │   │   │   ├── useAuth.ts          # 认证状态
 │   │   │   ├── useProject.ts       # 项目状态 + 防抖自动保存
@@ -152,7 +150,7 @@ docker compose up -d
 
 ```bash
 # 安装依赖
-cd backend && pip install -e ".[dev]"
+cd backend && pip install -r requirements-dev.txt
 cd frontend && npm install
 
 # 运行测试
@@ -167,8 +165,8 @@ cd frontend && npx vue-tsc --noEmit
 
 项目具有较高的测试覆盖率：
 
-- **后端**: 16 个测试文件，涵盖认证、计算引擎（板/次梁/主梁）、项目 CRUD、快照管理、API 路由、教师参考值回归测试
-- **前端**: 10 个 spec 文件，涵盖 composables、API 模块、导航配置
+- **后端**: 13 个测试文件，涵盖认证、计算引擎（板/次梁/主梁）、项目 CRUD、快照管理、API 路由、教师参考值回归测试
+- **前端**: 9 个 spec 文件，涵盖 composables、API 模块、导航配置
 - **测试特性**: 数据库隔离（`tmp_path` + `monkeypatch`）、浮点近似断言（`pytest.approx`）、认证门禁验证、用户隔离测试
 
 ## 部署
