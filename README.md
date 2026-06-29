@@ -102,6 +102,7 @@ docker compose up -d
 │   │   ├── test_projects_api.py    # 项目 API 测试
 │   │   ├── test_snapshots_api.py   # 快照 API 测试
 │   │   └── test_teacher_validation.py # 教师参考值回归测试
+│   ├── run.py                     # PyInstaller 入口（SERVE_STATIC=1）
 │   ├── Dockerfile
 │   └── pyproject.toml
 ├── frontend/                       # Vue 3 + Element Plus 前端
@@ -141,6 +142,9 @@ docker compose up -d
 │   ├── nginx.conf
 │   └── vite.config.ts
 ├── docs/
+├── build_win.py                   # Windows 便携版打包脚本
+├── assets/
+│   └── logo.ico                   # exe 图标
 ├── docker-compose.yml.example
 ├── start-backend.bat
 └── README.md
@@ -171,4 +175,19 @@ cd frontend && npx vue-tsc --noEmit
 
 ## 部署
 
+### 服务器
+
 服务器部署流程参考 [`docs/`](docs/)，生产环境使用 Docker Compose 启动 Nginx + Uvicorn 双容器。
+
+### Windows 便携版（单文件 exe）
+
+```bash
+pip install PyInstaller
+python build_win.py
+```
+
+构建流程：
+1. `npm run build` — 前端构建
+2. PyInstaller `--onefile` — 后端 + 前端 `dist` 打包为单个 exe
+
+产物为 `build/ConcreteCourseDesign.exe`，运行后自动在 exe 同级创建 `data/`（SQLite 数据库）和 `logs/`（日志）。后端自动以 `SERVE_STATIC=1` 模式启动，由后端直接托管前端静态文件。
