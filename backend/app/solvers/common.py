@@ -21,6 +21,9 @@ __all__ = [
     "flexure_status",
     "ContinuousBeamCoefficients",
     "get_continuous_beam_coefficients",
+    "MomentForceEntry",
+    "ShearForceEntry",
+    "calc_continuous_beam_internal_forces_detailed",
     "calc_continuous_beam_internal_forces",
     "generate_bar_bundles",
     "calc_flexure_design",
@@ -185,7 +188,34 @@ def _map_support_table(actual_idx: int, n: int) -> int:
     return 5
 
 
-def calc_continuous_beam_internal_forces(
+@dataclass
+class MomentForceEntry:
+    """单个截面弯矩的完整计算明细（供计算书展示内力系数推导）。"""
+
+    name: str
+    value: float  # 设计弯矩 (kN·m)；支座为边缘调整后的 M'
+    l0: float  # 采用的计算跨度 (m)
+    alpha: float  # 恒载弯矩系数 α
+    alpha1: float  # 活载弯矩系数 α1
+    g_l0_sq: float  # g·l0²
+    q_l0_sq: float  # q·l0²
+    m_raw: float  # α·g·l0² + α1·q·l0²（支座边缘调整前）
+
+
+@dataclass
+class ShearForceEntry:
+    """单个截面剪力的完整计算明细。"""
+
+    name: str
+    value: float  # 设计剪力 (kN)
+    ln: float  # 采用的净跨度 (m)
+    beta: float  # 恒载剪力系数 β
+    beta1: float  # 活载剪力系数 β1
+    g_ln: float  # g·ln
+    q_ln: float  # q·ln
+
+
+def calc_continuous_beam_internal_forces_detailed(
     g: float,
     q: float,
     n: int,
@@ -194,44 +224,50 @@ def calc_continuous_beam_internal_forces(
     middle_net: float,
     edge_net: float,
     support_moment_delta: float = 0.0,
-) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
-    """等跨连续梁（均布荷载）内力计算 — 板、次梁共用。
+) -> tuple[list[MomentForceEntry], list[ShearForceEntry]]:
+    """等跨连续梁（均布荷载）内力计算（详细版）— 板、次梁共用。
 
-    M = α·g·l0² + α1·q·l0²   (弯矩，用计算跨度 l0)
-    V = β·g·ln + β1·q·ln     (剪力，用净跨度 ln)
+    与 :func:`calc_continuous_beam_internal_forces` 同公式，但额外暴露 α/α1/β/β1、
+    g·l0²/q·l0²、g·ln/q·ln 与边缘调整前弯矩 m_raw，供计算书渲染内力系数详表：
+
+      M = α·g·l0² + α1·q·l0²   (弯矩，用计算跨度 l0)
+      V = β·g·ln + β1·q·ln     (剪力，用净跨度 ln)
 
     系数查表仅支持 2~5 跨；n > 5 时按 5 跨查表（见 :func:`_map_span_table`）。
-    支座弯矩统一叠加 ``support_moment_delta``（次梁做支座边缘调整 M+(b/2)·V₀；板为 0）。
-
-    Returns:
-        (moments, shears)：各为 ``(截面名, 设计值)`` 元组列表，值已 round 到 4 位。
+    支座弯矩叠加 ``support_moment_delta``（次梁做支座边缘调整 M+(b/2)·V₀；板为 0）。
     """
     effective_spans = min(n, 5)
     coeffs = get_continuous_beam_coefficients(effective_spans)
 
     # ---- 弯矩 ----
-    moments: list[tuple[str, float]] = []
+    moments: list[MomentForceEntry] = []
     for pos in range(2 * n - 1):
-        if pos % 2 == 0:
+        is_support = pos % 2 == 1
+        if not is_support:
             span_idx = pos // 2
             ti = _map_span_table(span_idx, n)
-            alpha = coeffs.moments[ti]
-            alpha1 = coeffs.moment_alpha1[ti]
             l0 = edge_span if _span_type_for_index(span_idx, n) == "edge" else middle_span
-            value = alpha * g * l0 ** 2 + alpha1 * q * l0 ** 2
-            moments.append((f"M{span_idx + 1}", round(value, 4)))
+            name = f"M{span_idx + 1}"
         else:
             support_idx = (pos - 1) // 2
             ti = _map_support_table(support_idx, n)
-            alpha = coeffs.moments[ti]
-            alpha1 = coeffs.moment_alpha1[ti]
-            value = alpha * g * middle_span ** 2 + alpha1 * q * middle_span ** 2
-            value += support_moment_delta
-            letter = chr(ord("A") + support_idx + 1)
-            moments.append((f"M_{letter}", round(value, 4)))
+            l0 = middle_span
+            name = f"M_{chr(ord('A') + support_idx + 1)}"
+        alpha = coeffs.moments[ti]
+        alpha1 = coeffs.moment_alpha1[ti]
+        g_l0_sq = g * l0 ** 2
+        q_l0_sq = q * l0 ** 2
+        m_raw = alpha * g_l0_sq + alpha1 * q_l0_sq
+        value = m_raw + (support_moment_delta if is_support else 0.0)
+        moments.append(MomentForceEntry(
+            name=name, value=round(value, 4), l0=round(l0, 4),
+            alpha=alpha, alpha1=alpha1,
+            g_l0_sq=round(g_l0_sq, 4), q_l0_sq=round(q_l0_sq, 4),
+            m_raw=round(m_raw, 4),
+        ))
 
     # ---- 剪力 ----
-    shears: list[tuple[str, float]] = []
+    shears: list[ShearForceEntry] = []
     for pos in range(2 * n):
         if pos == 0:
             ti = 0
@@ -242,21 +278,50 @@ def calc_continuous_beam_internal_forces(
         elif pos % 2 == 1:
             support_idx = pos // 2
             ti = _map_support_table(support_idx, n)
-            letter = chr(ord("A") + support_idx + 1)
-            name = f"Vl_{letter}"
+            name = f"Vl_{chr(ord('A') + support_idx + 1)}"
         else:
             support_idx = pos // 2 - 1
             ti = _map_support_table(support_idx, n) + 1
-            letter = chr(ord("A") + support_idx + 1)
-            name = f"Vr_{letter}"
+            name = f"Vr_{chr(ord('A') + support_idx + 1)}"
 
         ln = edge_net if (pos == 0 or pos == 2 * n - 1) else middle_net
         beta = coeffs.shears[ti]
         beta1 = coeffs.shear_beta1[ti]
-        value = beta * g * ln + beta1 * q * ln
-        shears.append((name, round(value, 4)))
+        g_ln = g * ln
+        q_ln = q * ln
+        value = beta * g_ln + beta1 * q_ln
+        shears.append(ShearForceEntry(
+            name=name, value=round(value, 4), ln=round(ln, 4),
+            beta=beta, beta1=beta1,
+            g_ln=round(g_ln, 4), q_ln=round(q_ln, 4),
+        ))
 
     return moments, shears
+
+
+def calc_continuous_beam_internal_forces(
+    g: float,
+    q: float,
+    n: int,
+    middle_span: float,
+    edge_span: float,
+    middle_net: float,
+    edge_net: float,
+    support_moment_delta: float = 0.0,
+) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
+    """等跨连续梁（均布荷载）内力计算 — 仅返回 (截面名, 设计值)，向后兼容。
+
+    详细系数与中间量见 :func:`calc_continuous_beam_internal_forces_detailed`。
+    """
+    moments, shears = calc_continuous_beam_internal_forces_detailed(
+        g=g, q=q, n=n, middle_span=middle_span, edge_span=edge_span,
+        middle_net=middle_net, edge_net=edge_net,
+        support_moment_delta=support_moment_delta,
+    )
+    return (
+        [(m.name, m.value) for m in moments],
+        [(s.name, s.value) for s in shears],
+    )
 
 
 # ──────────────────────────────────────────────

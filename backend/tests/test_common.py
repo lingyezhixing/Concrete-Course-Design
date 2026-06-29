@@ -6,6 +6,8 @@ import pytest
 from app.solvers.common import (
     alpha_s,
     as_required,
+    calc_continuous_beam_internal_forces,
+    calc_continuous_beam_internal_forces_detailed,
     calc_shear_design,
     effective_depth,
     flexure_status,
@@ -127,3 +129,58 @@ class TestCalcShearDesign:
         )
         assert result.max_shear == pytest.approx(170.71, abs=0.01)
         assert result.hanger_area > 0
+
+
+class TestCalcContinuousBeamDetailed:
+    """内力详细计算 — 暴露 α/α1/β/β1 与中间量"""
+
+    def test_moment_entries_carry_coefficients(self):
+        """5 跨板：M1 的 α/α1/l0 与系数表一致，m_raw = α·g·l0²+α1·q·l0²"""
+        moments, _ = calc_continuous_beam_internal_forces_detailed(
+            g=5.4975, q=2.4, n=5,
+            middle_span=2.0, edge_span=1.92,
+            middle_net=1.8, edge_net=1.78,
+        )
+        m1 = moments[0]
+        assert m1.name == "M1"
+        assert m1.alpha == 0.0781
+        assert m1.alpha1 == 0.100
+        assert m1.l0 == 1.92
+        assert m1.m_raw == pytest.approx(
+            0.0781 * m1.g_l0_sq + 0.100 * m1.q_l0_sq, abs=1e-3
+        )
+        assert m1.value == m1.m_raw  # 跨中无支座边缘调整
+
+    def test_shear_entries_carry_coefficients(self):
+        """V_A 的 β/β1 与系数表一致，V = β·g·ln+β1·q·ln"""
+        _, shears = calc_continuous_beam_internal_forces_detailed(
+            g=5.4975, q=2.4, n=5,
+            middle_span=2.0, edge_span=1.92,
+            middle_net=1.8, edge_net=1.78,
+        )
+        va = shears[0]
+        assert va.name == "V_A"
+        assert va.beta == 0.394
+        assert va.beta1 == 0.447
+        assert va.value == pytest.approx(va.beta * va.g_ln + va.beta1 * va.q_ln, abs=1e-3)
+
+    def test_support_delta_in_value_not_mraw(self):
+        """支座弯矩：value = m_raw + delta，m_raw 不含 delta"""
+        moments, _ = calc_continuous_beam_internal_forces_detailed(
+            g=10.362, q=7.2, n=5,
+            middle_span=6.0, edge_span=5.88,
+            middle_net=5.75, edge_net=5.635,
+            support_moment_delta=1.5,
+        )
+        mb = next(m for m in moments if m.name == "M_B")
+        assert mb.value == pytest.approx(mb.m_raw + 1.5, abs=1e-3)
+
+    def test_backward_compat_wrapper(self):
+        """旧函数仍返回 (name, value) 元组，值与详细版一致"""
+        moments, _ = calc_continuous_beam_internal_forces(
+            g=5.4975, q=2.4, n=5,
+            middle_span=2.0, edge_span=1.92,
+            middle_net=1.8, edge_net=1.78,
+        )
+        assert moments[0][0] == "M1"
+        assert moments[0][1] == pytest.approx(2.468, abs=1e-2)
