@@ -86,15 +86,34 @@
           <el-table-column prop="xi" label="ξ" min-width="60" align="right" />
           <el-table-column prop="as_required" label="As需" min-width="90" align="right" />
           <el-table-column label="As实" min-width="90">
-            <template #default="{ row }"><el-input-number v-model="row.as_provided" :precision="0" :controls="false" size="small" class="num" /></template>
+            <template #default="{ row }"><span class="val">{{ asProvided(row) }}</span></template>
           </el-table-column>
-          <el-table-column label="选筋" min-width="140">
+          <el-table-column label="选筋" min-width="180">
             <template #default="{ row }">
               <span v-if="!row.selected_bar" class="muted">—</span>
               <span v-else class="bar-cell">
-                <el-input-number :model-value="row.selected_bar.count" :controls="false" :min="1" size="small" class="bar-num" @update:model-value="(v:number|undefined)=>updateBar(row,'count',v)" />
-                Φ
-                <el-input-number :model-value="row.selected_bar.diameter" :controls="false" :min="1" size="small" class="bar-num" @update:model-value="(v:number|undefined)=>updateBar(row,'diameter',v)" />
+                <el-select
+                  :model-value="row.selected_bar.count"
+                  size="small"
+                  class="bar-sel"
+                  @update:model-value="(v: number) => onCountChange(row, v)"
+                >
+                  <el-option v-for="n in countOpts" :key="n" :label="String(n)" :value="n" />
+                </el-select>
+                <span class="phi">Φ</span>
+                <el-select
+                  :model-value="row.selected_bar.diameter"
+                  size="small"
+                  class="bar-sel"
+                  @update:model-value="(v: number) => onDiameterChange(row, v)"
+                >
+                  <el-option
+                    v-for="d in diaOpts(row)"
+                    :key="d"
+                    :label="String(d)"
+                    :value="d"
+                  />
+                </el-select>
               </span>
             </template>
           </el-table-column>
@@ -132,6 +151,12 @@ import PageHeader from '../components/common/PageHeader.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
+import {
+  barArea,
+  countOptions,
+  diameterOptions,
+  reinfStatus,
+} from '../config/rebarTable'
 import MainBeamDiagram from '../components/diagrams/MainBeamDiagram.vue'
 import SectionRebarDiagram from '../components/diagrams/SectionRebarDiagram.vue'
 
@@ -187,15 +212,53 @@ const rebarSections = computed(() => {
   return r.reinforcement.flexure.map((f) => ({
     name: f.name,
     shape: (f.section_type?.includes('T') ? 't' : 'rect') as 't' | 'rect',
-    b: f.width_used,
+    b: s.main_beam_width ?? 0,
     h: s.main_beam_height ?? 0,
     bar: { diameter: f.selected_bar?.diameter ?? 0, count: f.selected_bar?.count ?? 0 },
   }))
 })
 
-function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefined): void {
-  if (!row.selected_bar || v == null) return
-  row.selected_bar[field] = v
+/** 梁宽（用于下拉候选过滤）。 */
+const beamWidth = computed(() => data.value?.structure?.main_beam_width ?? 300)
+
+/** 可选根数列表。 */
+const countOpts = computed(() => countOptions(beamWidth.value))
+
+/** 给定截面的可选直径列表（依当前根数与 As需 过滤）。 */
+function diaOpts(row: Flexure): number[] {
+  if (!row.selected_bar) return []
+  return diameterOptions(beamWidth.value, row.selected_bar.count, row.as_required)
+}
+
+/** 实配面积（由选筋实时派生）。 */
+function asProvided(row: Flexure): number {
+  if (!row.selected_bar) return 0
+  return Math.round(barArea(row.selected_bar.diameter, row.selected_bar.count))
+}
+
+/** 同步实配面积与状态到行（供保存与表格展示）。 */
+function syncRow(row: Flexure): void {
+  if (!row.selected_bar) return
+  row.as_provided = asProvided(row)
+  row.status = reinfStatus(row.as_required, row.as_provided)
+}
+
+/** 根数变更：若当前直径不再合法则回落到第一个合法直径。 */
+function onCountChange(row: Flexure, n: number): void {
+  if (!row.selected_bar) return
+  row.selected_bar.count = n
+  const opts = diaOpts(row)
+  if (!opts.includes(row.selected_bar.diameter)) {
+    row.selected_bar.diameter = opts[0] ?? row.selected_bar.diameter
+  }
+  syncRow(row)
+}
+
+/** 直径变更。 */
+function onDiameterChange(row: Flexure, d: number): void {
+  if (!row.selected_bar) return
+  row.selected_bar.diameter = d
+  syncRow(row)
 }
 </script>
 
@@ -220,4 +283,7 @@ function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefi
 .bar-cell { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-base); color: var(--foreground); }
 .bar-num { width: 56px; }
 .bar-num :deep(input) { text-align: center; padding-left: var(--space-1); padding-right: var(--space-1); }
+.bar-sel { width: 64px; }
+.bar-sel :deep(.el-select__wrapper) { padding: 0 var(--space-1); }
+.phi { color: var(--muted-foreground); }
 </style>

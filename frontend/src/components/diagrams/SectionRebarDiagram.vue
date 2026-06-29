@@ -5,7 +5,7 @@
         <!-- 板带截面 -->
         <template v-if="s.shape === 'slab'">
           <rect :x="pad" :y="36" :width="W - 2 * pad" :height="10" class="outline" />
-          <circle v-for="(d, k) in bars(s)" :key="k" :cx="d.cx" :cy="50" r="2.6" class="bar" />
+          <circle v-for="(d, k) in bars(s)" :key="k" :cx="d.cx" :cy="50" :r="d.r" class="bar" />
           <!-- 板厚标注 -->
           <line :x1="W - pad + 4" :y1="36" :x2="W - pad + 4" :y2="46" class="dim" />
           <text :x="W - pad + 8" :y="44" class="dim-text">h</text>
@@ -13,21 +13,17 @@
 
         <!-- T 形截面 -->
         <template v-else-if="s.shape === 't'">
-          <rect :x="20" :y="18" :width="80" height="9" class="outline" />
-          <rect :x="50" :y="27" width="20" height="40" class="outline" />
-          <rect :x="53" :y="30" width="14" height="33" class="stirrup" />
-          <circle v-for="(d, k) in bars(s)" :key="k" :cx="d.cx" :cy="62" r="3" class="bar" />
-          <circle :cx="56" cy="33" r="2" class="bar" />
-          <circle :cx="64" cy="33" r="2" class="bar" />
+          <rect :x="flangeX" :y="12" :width="flangeW" :height="8" class="outline" />
+          <rect :x="webX(s.b)" :y="20" :width="webW(s.b)" :height="46" class="outline" />
+          <rect :x="webX(s.b) + 3" :y="23" :width="Math.max(webW(s.b) - 6, 4)" :height="40" class="stirrup" />
+          <circle v-for="(d, k) in bars(s)" :key="k" :cx="d.cx" :cy="58" :r="d.r" class="bar" />
         </template>
 
         <!-- 矩形截面（支座） -->
         <template v-else>
-          <rect :x="34" :y="16" width="52" height="50" class="outline" />
-          <rect :x="38" :y="20" width="44" height="42" class="stirrup" />
-          <circle v-for="(d, k) in bars(s)" :key="k" :cx="d.cx" :cy="60" r="3" class="bar" />
-          <circle :cx="44" cy="23" r="2" class="bar" />
-          <circle :cx="76" cy="23" r="2" class="bar" />
+          <rect :x="rectX(s.b)" :y="14" :width="rectW(s.b)" :height="52" class="outline" />
+          <rect :x="rectX(s.b) + 3" :y="17" :width="Math.max(rectW(s.b) - 6, 4)" :height="46" class="stirrup" />
+          <circle v-for="(d, k) in bars(s)" :key="k" :cx="d.cx" :cy="58" :r="d.r" class="bar" />
         </template>
       </svg>
       <div class="rebar-label">
@@ -65,21 +61,55 @@ const W = 120
 const H = 76
 const pad = 15
 
-/** 受力筋圆点横坐标（板按间距、梁按根数均分） */
-function bars(s: RebarSection): { cx: number }[] {
+/** 矩形截面像素宽（按梁宽 b 缩放，限制在画布内）。 */
+function rectW(b: number): number {
+  return Math.max(40, Math.min(90, (b || 200) * 0.3))
+}
+function rectX(b: number): number {
+  return (W - rectW(b)) / 2
+}
+
+/** T 形腹板像素宽（视觉上窄于翼缘，体现 T 形比例）。 */
+function webW(b: number): number {
+  return Math.max(24, Math.min(36, (b || 200) * 0.15))
+}
+function webX(b: number): number {
+  return (W - webW(b)) / 2
+}
+
+const flangeW = 100
+const flangeX = (W - flangeW) / 2
+
+/** 钢筋圆点半径：梁筋按 (d/b)×宽px 等比缩放，板按直径缩放。 */
+function barRadius(d: number, b: number, widthPx: number, shape: RebarSection['shape']): number {
+  if (shape === 'slab') return Math.max(1.8, Math.min(3.5, (d || 8) * 0.12))
+  const r = ((d || 12) / (b || 200)) * widthPx / 2
+  return Math.max(1.4, Math.min(4.5, r))
+}
+
+/** 受力筋圆点横坐标 + 半径（板按间距、梁按根数均分，依梁宽布置） */
+function bars(s: RebarSection): { cx: number; r: number }[] {
   if (s.shape === 'slab') {
     const spacing = s.bar.spacing ?? 200
     const n = Math.min(Math.max(Math.round(1000 / spacing), 2), 8)
+    const r = barRadius(s.bar.diameter, s.b, W - 2 * 24, s.shape)
     const x0 = 24
     const x1 = W - 24
     return Array.from({ length: n }, (_, i) => ({
       cx: n === 1 ? (x0 + x1) / 2 : x0 + ((x1 - x0) * i) / (n - 1),
+      r,
     }))
   }
   const count = Math.max(s.bar.count ?? 2, 1)
-  const [x0, x1] = s.shape === 't' ? [54, 66] : [42, 78]
+  const wPx = s.shape === 't' ? webW(s.b) : rectW(s.b)
+  const r = barRadius(s.bar.diameter, s.b, wPx, s.shape)
+  const x0 = (W - wPx) / 2
+  const margin = r + 3
+  const inner0 = x0 + margin
+  const inner1 = x0 + wPx - margin
   return Array.from({ length: count }, (_, i) => ({
-    cx: count === 1 ? (x0 + x1) / 2 : x0 + ((x1 - x0) * i) / (count - 1),
+    cx: count === 1 ? (inner0 + inner1) / 2 : inner0 + ((inner1 - inner0) * i) / (count - 1),
+    r,
   }))
 }
 

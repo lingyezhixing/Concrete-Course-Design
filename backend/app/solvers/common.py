@@ -261,12 +261,25 @@ def calc_continuous_beam_internal_forces(
 
 # ──────────────────────────────────────────────
 # 梁配筋候选方案
+# 依据《附表 3-1 钢筋的公称直径、公称截面积及理论质量》
 # ──────────────────────────────────────────────
 
-_STANDARD_BAR_DIAMETERS = [12, 14, 16, 18, 20, 22, 25]
-_BAR_COUNTS = [2, 3, 4, 5, 6]
-# 每层可放最大根数（按梁宽，保守取值）
-_MAX_BARS_PER_LAYER = {200: 3, 250: 3, 300: 4, 350: 5}
+# 附表 3-1 梁纵向受力筋常用公称直径 (mm)
+_STANDARD_BAR_DIAMETERS = [12, 14, 16, 18, 20, 22, 25, 28, 32]
+# 附表 3-1 单根钢筋公称截面积 (mm²)
+_SINGLE_BAR_AREA = {
+    12: 113.1, 14: 153.9, 16: 201.1, 18: 254.5, 20: 314.2,
+    22: 380.1, 25: 490.9, 28: 615.8, 32: 804.2,
+}
+# 候选根数范围（单层布置）
+_BAR_COUNTS = [2, 3, 4, 5, 6, 7, 8]
+# 梁下部纵向受力筋最小净距 (GB 50010)：≥ 25mm
+_MIN_BAR_CLEARANCE = 25.0
+
+
+def bar_clearance(beam_width: float, count: int, diameter: float) -> float:
+    """梁宽方向钢筋净距 (b − n·d)/(n+1) (mm)。"""
+    return (beam_width - count * diameter) / (count + 1)
 
 
 def generate_bar_bundles(
@@ -275,27 +288,25 @@ def generate_bar_bundles(
 ) -> list[BeamBarBundle]:
     """生成梁配筋候选方案（按面积升序）。
 
+    依据附表 3-1 的「直径 × 根数」组合，筛选同时满足以下两项的方案：
+
+    1. ``As = n × 单根公称面积 ≥ as_required``
+    2. 净距 ``(b − n·d)/(n+1) ≥ 25mm``（单层布置，GB 50010 下部筋最小净距）
+
     Args:
         as_required: 所需钢筋面积 (mm²)
         beam_width: 梁宽 (mm)
 
     Returns:
-        满足 As ≥ as_required 的候选方案，按面积升序
+        满足要求的候选方案，按面积升序
     """
-    max_per_layer = _MAX_BARS_PER_LAYER.get(beam_width, 3)
     candidates: list[BeamBarBundle] = []
-    seen: set[str] = set()
 
     for d in _STANDARD_BAR_DIAMETERS:
-        max_bars = min(6, max_per_layer * 2)  # 最多 2 层
         for n in _BAR_COUNTS:
-            if n > max_bars:
+            if bar_clearance(beam_width, n, d) < _MIN_BAR_CLEARANCE:
                 continue
             bar = BeamBarBundle(count=n, diameter=d)
-            key = bar.display
-            if key in seen:
-                continue
-            seen.add(key)
             if bar.area >= as_required:
                 candidates.append(bar)
 

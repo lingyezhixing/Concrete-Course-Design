@@ -217,39 +217,41 @@
             <el-table-column prop="as_required" label="As需" min-width="90" align="right" />
             <el-table-column label="As实" min-width="100">
               <template #default="{ row }">
-                <el-input-number
-                  v-model="row.as_provided"
-                  :precision="0"
-                  :controls="false"
-                  size="small"
-                  class="num"
-                />
+                <span class="val">{{ asProvided(row) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="选筋" min-width="160">
+            <el-table-column label="选筋" min-width="180">
               <template #default="{ row }">
                 <span v-if="!row.selected_bar" class="muted">—</span>
                 <span v-else class="bar-cell">
-                  Φ
-                  <el-input-number
+                  <span class="phi">Φ</span>
+                  <el-select
                     :model-value="row.selected_bar.diameter"
-                    :controls="false"
                     size="small"
-                    class="bar-num"
-                    @update:model-value="
-                      (v: number | undefined) => updateBar(row, 'diameter', v)
-                    "
-                  />
-                  @
-                  <el-input-number
+                    class="bar-sel"
+                    @update:model-value="(v: number) => onDiameterChange(row, v)"
+                  >
+                    <el-option
+                      v-for="d in diaOpts(row)"
+                      :key="d"
+                      :label="String(d)"
+                      :value="d"
+                    />
+                  </el-select>
+                  <span class="phi">@</span>
+                  <el-select
                     :model-value="row.selected_bar.spacing"
-                    :controls="false"
                     size="small"
-                    class="bar-num"
-                    @update:model-value="
-                      (v: number | undefined) => updateBar(row, 'spacing', v)
-                    "
-                  />
+                    class="bar-sel"
+                    @update:model-value="(v: number) => onSpacingChange(row, v)"
+                  >
+                    <el-option
+                      v-for="s in spaceOpts(row)"
+                      :key="s"
+                      :label="String(s)"
+                      :value="s"
+                    />
+                  </el-select>
                 </span>
               </template>
             </el-table-column>
@@ -282,6 +284,12 @@ import PageHeader from '../components/common/PageHeader.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
+import {
+  reinfStatus,
+  slabAreaPerMeter,
+  slabDiameterOptions,
+  slabSpacingOptions,
+} from '../config/rebarTable'
 import UniformLoadBeamDiagram from '../components/diagrams/UniformLoadBeamDiagram.vue'
 import SectionRebarDiagram from '../components/diagrams/SectionRebarDiagram.vue'
 import InternalForceDiagram from '../components/diagrams/InternalForceDiagram.vue'
@@ -400,14 +408,48 @@ const mvData = computed(() => {
   }
 })
 
-/** 修改选筋子字段（diameter/spacing）。 */
-function updateBar(
-  row: ReinfSection,
-  field: 'diameter' | 'spacing',
-  v: number | undefined,
-): void {
-  if (!row.selected_bar || v == null) return
-  row.selected_bar[field] = v
+/** 给定截面的可选直径（至少存在一个间距满足 As）。 */
+function diaOpts(row: ReinfSection): number[] {
+  return slabDiameterOptions(row.as_required)
+}
+
+/** 给定直径下可选间距（满足 As ≥ As需）。 */
+function spaceOpts(row: ReinfSection): number[] {
+  if (!row.selected_bar) return []
+  return slabSpacingOptions(row.selected_bar.diameter, row.as_required)
+}
+
+/** 实配面积（由选筋实时派生）。 */
+function asProvided(row: ReinfSection): number {
+  if (!row.selected_bar) return 0
+  return Math.round(
+    slabAreaPerMeter(row.selected_bar.diameter, row.selected_bar.spacing),
+  )
+}
+
+/** 同步实配面积与状态到行（供保存与表格展示）。 */
+function syncRow(row: ReinfSection): void {
+  if (!row.selected_bar) return
+  row.as_provided = asProvided(row)
+  row.status = reinfStatus(row.as_required, row.as_provided)
+}
+
+/** 直径变更：若当前间距不再合法则回落到第一个合法间距。 */
+function onDiameterChange(row: ReinfSection, d: number): void {
+  if (!row.selected_bar) return
+  row.selected_bar.diameter = d
+  const opts = spaceOpts(row)
+  if (!opts.includes(row.selected_bar.spacing)) {
+    row.selected_bar.spacing = opts[0] ?? row.selected_bar.spacing
+  }
+  syncRow(row)
+}
+
+/** 间距变更。 */
+function onSpacingChange(row: ReinfSection, s: number): void {
+  if (!row.selected_bar) return
+  row.selected_bar.spacing = s
+  syncRow(row)
 }
 </script>
 
@@ -489,6 +531,9 @@ function updateBar(
   padding-left: var(--space-1);
   padding-right: var(--space-1);
 }
+.bar-sel { width: 64px; }
+.bar-sel :deep(.el-select__wrapper) { padding: 0 var(--space-1); }
+.phi { color: var(--muted-foreground); }
 
 /* 响应式：窄屏堆叠 */
 @media (max-width: 960px) {
