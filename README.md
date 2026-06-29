@@ -1,337 +1,379 @@
-# 水利水电工程 — 混凝土课程设计计算平台
+# 水工钢筋混凝土课程设计 — 整体式单向板楼盖辅助计算平台
 
-**混凝土结构课程设计** Web 计算平台，涵盖 **板、次梁、主梁** 的内力计算与配筋设计，支持多项目存储、快照管理及教师参考值验证。
+> 面向水利水电工程专业《水工钢筋混凝土结构》课程设计的 Web 计算平台。
+> 覆盖 **板、次梁、主梁** 三构件的荷载计算、内力分析、正截面配筋、斜截面箍筋与构造措施，
+> 支持 **多项目管理、历史快照、计算书自动生成（可一键打印 PDF）**，并提供用户登录与数据隔离。
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Tests](https://img.shields.io/badge/tests-249%20passed-brightgreen.svg)
+![Python](https://img.shields.io/badge/python-3.12-3776AB.svg)
+![Vue](https://img.shields.io/badge/Vue-3-42b883.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688.svg)
+
+- **开源地址**：<https://github.com/lingyezhixing/Concrete-Course-Design>
+- **开源协议**：MIT（见 [LICENSE](LICENSE)）
+- **详细文档**：见 [`docs/`](docs/) 目录（[文档索引](docs/README.md)）
 
 ---
 
 ## 目录
 
-- [课程背景](#课程背景)
-- [快速启动](#快速启动)
-- [功能模块](#功能模块)
-- [技术栈](#技术栈)
-- [项目结构](#项目结构)
-- [架构设计](#架构设计)
-- [测试](#测试)
-- [部署](#部署)
+- [水工钢筋混凝土课程设计 — 整体式单向板楼盖辅助计算平台](#水工钢筋混凝土课程设计--整体式单向板楼盖辅助计算平台)
+  - [目录](#目录)
+  - [一、项目简介](#一项目简介)
+  - [二、课程背景与设计目标](#二课程背景与设计目标)
+  - [三、功能一览](#三功能一览)
+  - [四、技术栈](#四技术栈)
+    - [与教师示例平台（Streamlit）的对比](#与教师示例平台streamlit的对比)
+  - [五、开发与代码统计](#五开发与代码统计)
+    - [开发提交统计](#开发提交统计)
+    - [代码量统计](#代码量统计)
+  - [六、安装与运行](#六安装与运行)
+    - [方式一：Windows 便携版（推荐，零环境配置）](#方式一windows-便携版推荐零环境配置)
+    - [方式二：Windows 源码运行（开发 / 自定义）](#方式二windows-源码运行开发--自定义)
+    - [方式三：Linux 源码运行](#方式三linux-源码运行)
+    - [方式四：Linux Docker Compose 一键启动（推荐部署）](#方式四linux-docker-compose-一键启动推荐部署)
+  - [七、计算方法速览](#七计算方法速览)
+  - [八、测试](#八测试)
+  - [九、开发启动方式](#九开发启动方式)
+  - [十、目录结构](#十目录结构)
+  - [十一、已知不足与改进方向](#十一已知不足与改进方向)
+  - [十二、文档导航](#十二文档导航)
+  - [许可证](#许可证)
 
 ---
 
-## 课程背景
+## 一、项目简介
 
-本平台针对水利水电工程专业《水工钢筋混凝土结构》课程设计开发，依据 **2026 版水工钢筋混凝土课程设计任务书** 实现。设计任务涵盖：
+本平台将传统手算的整体式单向板肋形楼盖设计流程**数字化、参数化、可视化**。用户在网页上输入结构布置、材料、荷载等设计参数，平台自动完成 **板 → 次梁 → 主梁** 的全链计算，输出每一控制截面的荷载、跨度、内力、配筋面积与钢筋选型，并附带力学计算简图、弯矩图、剪力图与抵抗弯矩图。
 
-- 某水电站厂房 **整体式单向板楼盖** 设计
-- 三构件计算：**板**、**次梁**、**主梁**
-- 完整计算流程：荷载计算 → 内力分析 → 配筋设计 → 截面复核
+平台核心特点：
 
-平台将传统手算流程数字化，自动完成查表、迭代选筋等重复性工作，输出可直接用于施工图绘制的配筋结果。
-
----
-
-## 快速启动
-
-### 后端
-
-```bash
-cd backend
-pip install -r requirements-dev.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-API 文档: http://localhost:8000/docs
-
-> 可选：复制 `.env.example` 为 `.env` 以自定义 JWT 密钥、CORS 源等配置（默认值可直接用于本地开发）。
-
-### 前端
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-前端地址: http://localhost:3000
-
-### 容器化部署（一键启动）
-
-```bash
-cp docker-compose.yml.example docker-compose.yml
-docker compose up -d
-```
-
-前端: http://localhost:8000
+- **全构件覆盖**：板、次梁、主梁三类构件的荷载 → 内力 → 正截面 → 斜截面全流程。
+- **荷载自动传递**：板传次梁、次梁传主梁的集中力由程序自动推导（满足任务书「提高要求」）。
+- **参数输入自动校验 + 实时建议**：参数页对每一项输入即时校验（缺项高亮、超筋 αs > 0.5 拦截、范围与单位约束），并实时给出跨数推荐区间、板厚与截面高跨比 / 宽高比的合理性提示，辅助初学者规避低级错误。
+- **全程实时保存 + 结果完全可编辑**：所有输入与每一项计算得数（荷载、跨度、内力、配筋）的修改均经 800 ms 防抖**实时自动落库**，刷新或换设备登录等操作均不会丢失数据；同时**所有计算得数均可在表格中手动微调，计算书会随之实时自动更新**，便于与手算结果逐项对照后定稿。
+- **计算书自动生成**：一键装配八章节计算书并打印为 PDF。
+- **教师参考值逐位回归**：内置教师平台实测数据作为回归基准，三构件荷载 / 内力逐位吻合，杜绝回归。
+- **工程化质量**：前后端共计 **249 个自动化测试用例全部通过**，分层架构、类型严格、参数化无硬编码。
 
 ---
 
-## 功能模块
+## 二、课程背景与设计目标
+
+本平台依据 **《2026 版水工钢筋混凝土课程设计任务书》** 开发，设计对象为**某水电站厂房整体式单向板肋形楼盖**。
+
+任务书对「辅助计算程序」提出了分层要求，本项目对照完成情况如下（详见 [课程背景与设计目标](docs/课程背景与设计目标.md)）：
+
+| 任务书要求层次 | 本项目完成情况 |
+|----------------|----------------|
+| **基本要求**：至少实现一个构件模块、输入输出、公式与计算书一致、算例复核 | ✅ 三构件全覆盖，公式与教材一致，教师算例逐位复核 |
+| **提高要求**：覆盖两/三个构件、荷载自动传递、截面初估校核、配筋推荐与超配提示、弯矩剪力图、结果导出、友好界面 | ✅ 全部实现（三构件、荷载自动传递、截面合理性提示、配筋下拉选筋与状态、内力图、计算书 PDF 导出、Web 界面） |
+| **加分要求**：最不利荷载组合 / 弯矩包络图 / 抵抗弯矩图 / 全流程自动计算 / 计算书自动生成 / 智能校核 | ✅ 主梁四工况包络、抵抗弯矩图、全流程级联计算、计算书自动生成、超筋与必填校核 |
+
+本组选用平面尺寸 **30 m × 18 m**：30 m 方向平行于次梁，18 m 方向平行于主梁（亦为板的跨度方向）。混凝土 **C20**，板筋与箍筋用 **Ⅰ级钢（HPB300，fy = 270）**，梁纵筋用 **Ⅱ级钢（HRB335，fy = 300）**。
+
+---
+
+## 三、功能一览
 
 | 模块 | 功能说明 |
 |------|----------|
-| **登录/注册** | JWT 认证、用户数据隔离，同一设备可多用户独立使用 |
-| **项目概览** | 项目列表展示、创建/删除/快捷操作，含未提交变更提示 |
-| **设计参数** | 结构布置参数（跨度、柱网）、材料参数（混凝土等级、钢筋等级）、荷载参数（恒载/活载） |
-| **板计算** | 板的内力分析与配筋，含荷载计算、跨度确定、内力包络图、配筋面积及钢筋选型 |
-| **次梁计算** | 次梁内力与配筋，含 T 形/矩形截面判断、正截面抗弯、斜截面抗剪、箍筋计算 |
-| **主梁计算** | 主梁内力与配筋，含集中荷载处理、吊筋计算、弯矩包络图 |
-| **存档管理** | 项目快照保存/恢复/派生，支持回溯任意历史版本 |
-| **设置** | 三主题切换（暗/亮/暖）、账户管理 |
+| **登录 / 注册** | JWT 认证（7 天有效期）、bcrypt 密码哈希；同一设备多用户数据完全隔离，互不可见 |
+| **项目概览** | 项目卡片网格、新建 / 打开 / 删除项目，含未提交变更提示与加载骨架 |
+| **设计参数** | 三段式表单（结构布置 / 荷载 / 材料常量展示），**一键填入和清空演示数值，输入自动校验 + 实时跨数推荐 / 截面合理性建议**，一键级联计算，**所有荷载自动传递** |
+| **板计算** | 荷载（恒/活/折算）、计算跨度（边/中跨）、五控制截面弯矩剪力、按间距选筋（Φd@s）、计算简图与弯矩剪力图 |
+| **次梁计算** | 板传来荷载 + 自重 + 粉刷、折算荷载、支座边缘弯矩调整、T 形（跨中）/ 矩形（支座）正截面、斜截面箍筋、抵抗弯矩图 |
+| **主梁计算** | 次梁传来集中力（三等分）、四工况内力包络、支座边缘调整、T 形正截面、斜截面箍筋与吊筋、三跨连续梁计算简图 |
+| **计算书** | 封面信息表单 + 八章节 A4 预览（基本资料 / 布置初估 / 板 / 次梁 / 主梁 / 配筋汇总 / 构造措施 / 抵抗弯矩图），浏览器原生打印为 PDF |
+| **存档管理** | 项目历史快照的归档 / 恢复 / 派生（fork）/ 重命名 / 删除，支持回溯任意版本、多任务推进、多方案比较 |
+| **系统设置** | 三主题切换（暗 / 亮 / 暖）、账户注销（二次确认，级联清除个人数据） |
 
 ---
 
-## 技术栈
+## 四、技术栈
 
 | 层级 | 技术 |
 |------|------|
-| 后端框架 | Python 3.12+ / FastAPI / Uvicorn |
-| 数据库 | SQLite（3 表：users / projects / snapshots） |
-| 认证 | JWT (PyJWT) + bcrypt（密码哈希） |
-| 前端框架 | Vue 3 (Composition API) + TypeScript (strict) |
-| 构建工具 | Vite |
-| UI 组件 | Element Plus + Lucide icons |
-| 主题系统 | 三主题令牌体系（暗/亮/暖），`color-mix` 桥接 Element Plus CSS 变量 |
-| 后端测试 | pytest（13 文件，144 个测试） |
-| 前端测试 | Vitest（9 spec 文件） |
-| 容器化 | Docker Compose（多阶段构建，Nginx 反代 Uvicorn） |
+| 后端框架 | Python 3.12 / FastAPI / Uvicorn |
+| 数据存储 | SQLite（`users` / `projects` / `snapshots` 三表，参数化查询防注入） |
+| 认证 | JWT（PyJWT）+ bcrypt |
+| 前端框架 | Vue 3（Composition API）+ TypeScript（strict） |
+| 构建工具 | Vite 6 |
+| UI 组件 | Element Plus + Lucide 图标 |
+| 主题系统 | 三主题设计令牌（暗 / 亮 / 暖），`color-mix` 桥接 Element Plus 变量 |
+| 后端测试 | pytest（147 用例） |
+| 前端测试 | Vitest + happy-dom（102 用例） |
+| 容器化 | Docker Compose（前端 Nginx 多阶段构建反代后端） |
+| 桌面打包 | PyInstaller（Windows 单文件便携版） |
+
+> 界面视觉风格参考了我的另一个开源项目 [LLM-Manager](https://github.com/lingyezhixing/LLM-Manager)（设计令牌 + 克制配色 + 三主题体系）。
+
+### 与教师示例平台（Streamlit）的对比
+
+教师提供的示例计算平台基于 **Streamlit**（Python 单体、服务端渲染，每次交互触发整页 rerun）。本项目采用 **Vue 3 + FastAPI 前后端分离 SPA** 架构，在交互体验与工程化方面优势明显：
+
+| 维度 | 教师示例（Streamlit） | 本平台（Vue + FastAPI） |
+|------|----------------------|------------------------|
+| 架构模型 | Python 单体，服务端渲染，交互触发整页重跑 | 前后端分离 SPA，组件级局部更新 |
+| 表格交互 | 编辑能力受限、状态管理弱 | 全部结果表格**逐格可编辑**、即时校验 |
+| 自动保存 | 无（依赖 session_state，刷新易丢） | 800 ms 防抖自动落库，刷新 / 换设备等操作不会丢失数据 |
+| 多用户 | 无内建鉴权与数据隔离 | JWT 登录 + 按用户项目 / 快照隔离 |
+| 历史版本 | 无 | 多项目 + 快照归档 / 恢复 / 派生 |
+| 计算书 / 打印 | 浏览器整页打印，分页不可控 | A4 专用打印样式，封面 / 表格 / 简图分页可控 |
+| 可维护性 | 单文件脚本，难扩展测试 | 分层架构 + 249 个自动化测试 |
+| 部署门槛 | 单进程易起 | 门槛较高但已提供exe 便携版 + Docker 一键，门槛已抹平 |
+
+> Streamlit 的优势在于**纯 Python、开发快、部署简单**；本平台以较高的实现复杂度换取了**流畅的交互体验、多用户支持与工程化可维护性**，更接近一个可长期使用的产品，而非一次性脚本。
 
 ---
 
-## 项目结构
+## 五、开发与代码统计
+
+### 开发提交统计
+
+| 指标 | 数值 |
+|------|------|
+| Git 提交总数 | **140** 次 |
+| 开发者 | lingyezhixing（独立开发） |
+| 开发周期 | 2026-06-24 → 2026-06-30（约 7 天） |
+| 累计代码变更 | 502 次文件改动、+25,220 行、−7,253 行 |
+
+提交时间分布（按日）：
 
 ```
-Concrete-Course-Design/
-├── backend/                                    # FastAPI 后端服务
-│   ├── app/
-│   │   ├── main.py                             # 应用入口：CORS、路由挂载、SPA 静态文件回落
-│   │   ├── config.py                           # 环境变量配置（SECRET_KEY、CORS、SERVE_STATIC 等）
-│   │   ├── security.py                         # 密码哈希（bcrypt）与 JWT 签发/验证工具
-│   │   ├── logging_config.py                   # 日志配置（控制台 + 文件轮转）
-│   │   ├── api/
-│   │   │   ├── health.py                       # GET /api/health 健康检查端点
-│   │   │   ├── projects.py                     # 项目 CRUD + /api/projects/{id}/calculate
-│   │   │   └── snapshots.py                    # 快照保存/恢复/派生端点
-│   │   ├── auth/
-│   │   │   ├── router.py                       # 注册/登录/获取当前用户/删除账户
-│   │   │   ├── dependencies.py                 # get_current_user 依赖注入
-│   │   │   └── repository.py                   # 用户数据访问层（注册、查询）
-│   │   ├── models/                             # Pydantic 数据模型（输入校验 + 输出序列化）
-│   │   │   ├── user.py                         # UserCreate / UserLogin / UserPublic / Token
-│   │   │   ├── project.py                      # ProjectCreate / ProjectPublic / Snapshot* / CalculateRequest
-│   │   │   ├── slab.py                         # SlabInput / SlabLoadOutput / SlabSpanOutput / 内力 / 配筋
-│   │   │   ├── beam.py                         # BeamInput / BeamFlexureResult / BeamShearResult / 等
-│   │   │   └── main_beam.py                    # MainBeamInput / MainBeamOutput / 集中力 / 吊筋
-│   │   ├── solvers/                            # 结构计算引擎（核心业务逻辑）
-│   │   │   ├── common.py                       # 共享公式：h0、αs、ξ、As、抗剪、等跨连续梁系数表
-│   │   │   ├── derive.py                       # 扁平参数 → 构件输入（板/次梁/主梁的荷载、跨度、截面派生）
-│   │   │   ├── slab/
-│   │   │   │   ├── solver.py                   # 板计算编排：荷载 → 跨度 → 内力 → 配筋
-│   │   │   │   └── utils.py                    # 板配筋辅助：φ@间距候选钢筋生成
-│   │   │   ├── beam/
-│   │   │   │   ├── solver.py                   # 次梁计算编排：荷载 → 跨度 → 内力 → 抗弯 → 抗剪
-│   │   │   │   └── utils.py                    # 次梁辅助：T 形/矩形截面判断
-│   │   │   └── main_beam/
-│   │   │       ├── solver.py                   # 主梁计算编排：含集中力处理
-│   │   │       └── utils.py                    # 主梁辅助：集中力下内力计算
-│   │   └── data/
-│   │       ├── connection.py                   # SQLite 连接管理 + 建表 DDL（users / projects / snapshots）
-│   │       └── project_repository.py           # 项目/快照数据访问层
-│   ├── tests/                                  # 后端测试（13 文件，144 测试）
-│   │   ├── conftest.py                         # 共享 fixtures：isolated_db、client、auth tokens
-│   │   ├── test_auth.py                        # 认证流程：密码哈希、JWT 编解码、注册/登录路由、用户隔离
-│   │   ├── test_common.py                      # 共享公式：等跨系数、内力计算
-│   │   ├── test_slab_reinforcement.py          # 板配筋单元测试（φ@间距、配筋面积、截面计算）
-│   │   ├── test_slab_utils.py                  # 板工具函数测试
-│   │   ├── test_slab_orchestration.py          # 板计算全流程编排测试
-│   │   ├── test_beam.py                        # 次梁单元测试（抗弯/抗剪/荷载/跨度/内力）
-│   │   ├── test_beam_orchestration.py          # 次梁全流程编排测试
-│   │   ├── test_main_beam.py                   # 主梁计算测试
-│   │   ├── test_project_repository.py          # 数据仓库层测试
-│   │   ├── test_projects_api.py                # 项目 API 集成测试（CRUD、用户隔离、认证门禁）
-│   │   ├── test_calculate_api.py               # 计算 API 集成测试（正常/异常/超筋检测）
-│   │   ├── test_snapshots_api.py               # 快照 API 集成测试
-│   │   └── test_teacher_validation.py          # 教师参考值回归测试
-│   ├── run.py                                  # PyInstaller 便携版入口
-│   ├── requirements.txt                        # 生产依赖
-│   ├── requirements-dev.txt                    # 开发依赖
-│   ├── Dockerfile
-│   └── pyproject.toml                          # pytest 配置
-├── frontend/                                   # Vue 3 + TypeScript 前端
-│   ├── src/
-│   │   ├── main.ts                             # 入口：Element Plus 注册、主题启
-│   │   ├── App.vue                             # 根组件
-│   │   ├── env.d.ts                            # 环境类型声明（.vue 模块声明等）
-│   │   ├── api/                                # Axios HTTP 接口层
-│   │   │   ├── index.ts                        # Axios 实例（baseURL、请求/响应拦截器、401 自动跳转登录）
-│   │   │   ├── auth.ts                         # 认证 API（register / login / me）
-│   │   │   └── projects.ts                     # 项目/快照/计算 API
-│   │   ├── assets/styles/
-│   │   │   └── tokens.css                      # 三主题设计令牌（暗/亮/暖）+ 全局样式 + Element Plus 变量桥接
-│   │   ├── components/
-│   │   │   ├── layout/                         # 布局组件
-│   │   │   │   ├── AppLayout.vue               # 整体页面布局框架
-│   │   │   │   ├── AppHeader.vue               # 顶部导航栏
-│   │   │   │   ├── AppSidebar.vue              # 侧边栏导航
-│   │   │   │   └── UserDropdown.vue            # 用户下拉菜单
-│   │   │   └── common/                         # 通用组件
-│   │   │       └── PageHeader.vue              # 页面标题栏
-│   │   ├── composables/                        # 组合式状态管理（模块级单例模式）
-│   │   │   ├── useAuth.ts                      # 认证状态：登录/注册/登出、会话持久化
-│   │   │   ├── useProject.ts                   # 项目状态：当前项目数据、防抖自动保存（800ms）
-│   │   │   ├── useTheme.ts                     # 主题切换：暗/亮/暖，localStorage 持久化
-│   │   │   ├── useSidebar.ts                   # 侧栏折叠状态
-│   │   │   ├── useHealth.ts                    # 后端健康状态轮询
-│   │   │   ├── useBeamLayout.ts                # 梁跨数与跨度配置逻辑
-│   │   │   └── useInternalForce.ts             # 内力系数表数据处理
-│   │   ├── config/
-│   │   │   └── nav.ts                          # 导航配置（路由标题、图标映射、顺序）
-│   │   ├── router/
-│   │   │   └── index.ts                        # Vue Router（懒加载路由、导航守卫）
-│   │   └── views/                              # 页面视图
-│   │       ├── Login.vue                       # 登录/注册页
-│   │       ├── Overview.vue                    # 项目概览页
-│   │       ├── Params.vue                      # 设计参数配置页
-│   │       ├── Slab.vue                        # 板计算页
-│   │       ├── SecondaryBeam.vue               # 次梁计算页
-│   │       ├── MainBeam.vue                    # 主梁计算页
-│   │       ├── Archive.vue                     # 存档管理页
-│   │       ├── Settings.vue                    # 设置页
-│   │       └── Report.vue                      # 报表页（预留）
-│   ├── src/__tests__/                          # 前端测试（9 spec 文件）
-│   │   ├── composables/
-│   │   │   ├── useAuth.spec.ts
-│   │   │   ├── useProject.spec.ts
-│   │   │   ├── useBeamLayout.spec.ts
-│   │   │   ├── useHealth.spec.ts
-│   │   │   ├── useInternalForce.spec.ts
-│   │   │   ├── useTheme.spec.ts
-│   │   │   └── useSidebar.spec.ts
-│   │   └── api/
-│   │       ├── auth.spec.ts
-│   │       └── index.spec.ts
-│   ├── Dockerfile                              # 多阶段构建（nginx 托管）
-│   ├── nginx.conf                               # Nginx 配置（API 反代到后端）
-│   ├── vite.config.ts                          # Vite 配置（开发代理到 localhost:8000）
-│   ├── vitest.config.ts                        # Vitest 配置（happy-dom）
-│   └── tsconfig.json                           # TypeScript strict 模式
-├── docs/                                       # 课程设计文档
-│   ├── 课设要求/                                # 课程设计任务书
-│   │   ├── 2026版水工钢筋混凝土课程设计.md
-│   │   └── 2026版_钢筋混凝土课程设计任务书_程序设计版.md
-│   ├── 求解器问题记录.md                        # 计算引擎已知问题与修复记录
-│   └── 想法记录.txt                             # 功能规划与改进思路
-├── assets/
-│   └── logo.ico                                # 应用程序图标
-├── .env.example                                # 环境变量配置模板
-├── .gitignore                                  # Git 忽略规则
-├── build_win.py                                # Windows 便携版打包脚本（PyInstaller）
-├── docker-compose.yml.example                  # Docker Compose 编排示例
-└── LICENSE
+2026-06-24  ███████                       7
+2026-06-27  ██████████████████████       22
+2026-06-28  ██████████████████████████████████  66
+2026-06-29  ██████████████████████████████████  39
+2026-06-30  ██████                        6
 ```
+
+### 代码量统计
+
+> **已排除 `node_modules`、`dist`、`build`、`__pycache__`、虚拟环境等所有编译 / 开发 / 生成文件**。
+
+| 类型 | 文件数 | 行数 |
+|------|--------|------|
+| 后端 Python（应用逻辑 `backend/app`） | 35 | 3,116 |
+| 前端 Vue 组件 | 23 | 4,339 |
+| 前端 TypeScript（源码） | 19 | 1,809 |
+| 前端 CSS（三主题令牌 + 打印样式） | 2 | 418 |
+| 前端 HTML（入口） | 1 | 27 |
+| 构建 / 打包脚本（`build_win.py`、`run.py`） | 2 | 159 |
+| **应用源码合计** | **82** | **9,868** |
+| 后端测试（pytest） | 15 | 1,907 |
+| 前端测试（Vitest spec） | 15 | 1,150 |
+| **测试代码合计** | **30** | **3,057** |
+| **项目总计（不含生成物）** | **112** | **12,925** |
 
 ---
 
-## 代码统计
+## 六、安装与运行
 
-以下统计不含编译生成文件、node_modules、虚拟环境及二进制资源文件。
+本平台提供 **Windows** 与 **Linux** 两种平台、**源码运行**与**开箱即用**两类方式，共四种组合。详细步骤见 [安装与运行](docs/安装与运行.md)。
 
-| 语言/类型 | 文件数 | 代码行数 | 占比 |
-|-----------|--------|----------|------|
-| Python（后端） | 52 | 3,955 | 40.5% |
-| Vue 组件 | 21 | 3,648 | 37.4% |
-| TypeScript | 29 | 1,871 | 19.2% |
-| CSS | 1 | 281 | 2.9% |
-| HTML | 1 | 13 | 0.1% |
-| **应用源码合计** | **104** | **9,768** | **100%** |
-| 配置与构建 | 13 | 216 | — |
-| 文档 | 7 | 1,057 | — |
-| **项目总计** | **124** | **11,041** | — |
+### 方式一：Windows 便携版（推荐，零环境配置）
 
----
+无需安装任何环境，双击 exe 即可运行。获取 exe 有两种途径：
 
-## 架构设计
+- **GitHub Releases（推荐）**：到 [Releases 页](https://github.com/lingyezhixing/Concrete-Course-Design/releases) 下载 `ConcreteCourseDesign.exe`，**始终为最新版本**；
+- **仓库 `Portable/` 目录**：仓库根目录的 [`Portable/`](Portable/) 文件夹内置可直接运行的 exe，**但可能不是最新版本**（随不定期打包更新）。
 
-### 后端架构
+运行说明：
 
-采用 **分层架构**，从路由到数据访问职责清晰：
+- 双击 `ConcreteCourseDesign.exe`，程序自动在 exe 同级目录创建 `data/`（数据库）与 `logs/`（日志）；
+- 自动打开浏览器访问 <http://localhost:8000>；
+- 后端以 `SERVE_STATIC` 模式直接托管前端，**无需安装 Python / Node / 任何依赖**。
 
-```
-路由层 (api/) → 认证层 (auth/) → 业务逻辑层 (solvers/) → 数据访问层 (data/)
-```
+如需自行打包最新版：`pip install pyinstaller && python build_win.py`（构建后自动放入 `Portable/`）。
 
-- **路由层**：接收 HTTP 请求，参数校验，调用业务逻辑，返回响应
-- **认证层**：JWT 令牌验证，用户身份注入
-- **业务逻辑层**：独立的计算引擎，每个构件（板/次梁/主梁）有独立的 solver 子包，共享公式提取至 `common.py`
-- **数据访问层**：SQLite 原始 SQL，参数化查询防注入
-
-### 前端架构
-
-采用 **组合式 API + 模块级单例** 状态管理模式：
-
-- **API 层**：Axios 封装，统一错误拦截，401 自动跳转登录
-- **组合式函数**：模块级 `ref` 实现全局状态共享，替代 Pinia/Vuex
-- **视图层**：每个构件一个视图页面，内含计算参数表格、结果展示、SVG 内力图与配筋示意图
-
-### 计算引擎设计
-
-计算流程遵循课程设计手算步骤：
-
-```
-参数派生 (derive.py) → 荷载计算 → 跨度确定 → 内力分析 → 配筋计算
-```
-
-每个阶段输出均为 Pydantic 模型，可独立测试。内力计算基于《水工钢筋混凝土结构》等跨连续梁系数表，>5 跨自动简化为 5 跨计算。
-
----
-
-## 测试
-
-### 测试概况
-
-| 测试范围 | 文件数 | 测试数 |
-|----------|--------|--------|
-| 后端单元测试 | 9 | ~100 |
-| 后端集成测试 | 4 | ~44 |
-| 前端测试 | 9 spec | — |
-| **合计** | **22** | **144+** |
-
-### 运行测试
+### 方式二：Windows 源码运行（开发 / 自定义）
 
 ```bash
-# 后端全部测试
-cd backend && pytest -v
+# 1. 后端（建议在 conda 环境）
+conda create -n concrete python=3.12 && conda activate concrete
+cd backend
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload --port 8000
 
-# 前端测试
-cd frontend && npm run test:run
-
-# 前端类型检查
-cd frontend && npx vue-tsc --noEmit
+# 2. 前端（另开终端）
+cd frontend
+npm install
+npm run dev      # 访问 http://localhost:3000
 ```
 
-### 测试覆盖亮点
+### 方式三：Linux 源码运行
 
-- **计算引擎**：每个求解阶段（荷载/跨度/内力/配筋）均有独立单元测试，与手算参考值对比验证
-- **教师参考值回归**：`test_teacher_validation.py` 内置标准工况的期望结果，防止回归
-- **API 集成测试**：完整覆盖项目 CRUD、用户隔离、认证门禁、超筋检测
-- **测试隔离**：`isolated_db` fixture 使用 `tmp_path + monkeypatch`，测试间互不干扰
+```bash
+# 后端
+cd backend
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 
----
+# 前端
+cd frontend
+npm install && npm run dev
+```
 
-## 部署
-
-### 服务器（Docker Compose）
+### 方式四：Linux Docker Compose 一键启动（推荐部署）
 
 ```bash
 cp docker-compose.yml.example docker-compose.yml
-docker compose up -d
+docker compose up -d --build
+# 访问 http://localhost:8000
 ```
 
-Nginx 反代前端请求到 Uvicorn 后端，前端访问: http://localhost:8000
+前端容器（Nginx）反代 `/api/` 至后端容器，对外仅需暴露 `8000` 端口，避免SQL注入攻击；数据通过 `./data`、`./logs` 卷挂载持久化。
 
-### Windows 便携版（单文件 exe）
+> ⚠️ 生产部署请务必设置 `SECRET_KEY` 环境变量（JWT 签名密钥），默认值为开发占位值。其余可配置项见 `.env.example`。
+
+---
+
+## 七、计算方法速览
+
+三构件统一遵循课程设计手算步骤：**参数派生 → 荷载计算 → 跨度确定 → 内力分析 → 正截面配筋 → 斜截面箍筋**。完整公式、系数表与推导见 [计算方法与公式](docs/计算方法与公式.md)。
+
+**材料与系数（固定，单一来源 `backend/app/materials.py`）**：C20 混凝土 fc = 9.6、ft = 1.1 N/mm²；Ⅰ级钢 fy = 270；Ⅱ级钢 fy = 300 N/mm²；结构系数 γd = 1.2；恒载分项系数 γG = 1.05；活载分项系数 γQ = 1.2。
+
+| 构件 | 荷载 | 内力方法 | 正截面 | 斜截面 |
+|------|------|----------|--------|--------|
+| **板** | 水磨石 + 板自重 + 抹灰 | 等跨连续梁系数表（2~5 跨，>5 跨按 5 跨简化），五控制截面弯矩剪力 | h₀ / αs / ξ / As，按 Φd@s 间距选筋 | —（板一般不验算） |
+| **次梁** | 板传来 + 自重 + 粉刷，折算荷载 g′、q′ | 同上系数表 + 支座边缘调整 M′=|Mc|−b/2·V₀ | 跨中 T 形 / 支座矩形 | Vc = 0.7·ft·b·h₀/γd，箍筋 |
+| **主梁** | 次梁传来集中力（三等分）+ 自重 + 粉刷 | 三跨集中力系数包络（4 种活载布置取最不利） | 全 T 形（课程简化） | Vc = 0.5·ft·b·h₀/γd，箍筋 + 吊筋 |
+
+**有效高度统一约定** h₀ = h − c − d/2（c 为保护层，d 为估算纵筋直径）。
+
+---
+
+## 八、测试
+
+| 测试范围 | 文件数 | 用例数 | 状态 |
+|----------|--------|--------|------|
+| 后端单元 + 集成（pytest） | 15 | **147** | ✅ 全部通过 |
+| 前端单元（Vitest） | 15 | **102** | ✅ 全部通过 |
+| **合计** | **30** | **249** | ✅ |
+
+运行方式：
 
 ```bash
-pip install PyInstaller
-python build_win.py
+# 后端
+cd backend && pytest -v            # 或 conda run -n concrete pytest -v
+
+# 前端
+cd frontend && npm run test:run    # 单次运行
+cd frontend && npx vue-tsc --noEmit  # 类型检查
 ```
 
-构建产物为 `build/ConcreteCourseDesign.exe`，运行后自动在 exe 同级创建 `data/`（SQLite 数据库）和 `logs/`（日志）。后端以 `SERVE_STATIC=1` 模式启动，直接托管前端静态文件，无需额外配置。
+**测试亮点**：
+
+- **教师参考值回归**：`test_teacher_validation.py` 以教师平台实测数据为期望值，对三构件荷载 / 跨度 / 内力**逐位断言**，防止任何回归。
+- **求解器单元测试**：每个计算阶段（荷载 / 跨度 / 内力 / 配筋 / 抗剪）独立测试，并与手算参考值对比。
+- **API 集成测试**：项目 CRUD、用户隔离、认证门禁、超筋检测（αs > 0.5 返回 400）全覆盖。
+- **测试隔离**：`isolated_db` fixture 使用 `tmp_path + monkeypatch`，测试间互不干扰。
+
+测试用例清单与手算对比见 [测试与验证](docs/测试与验证.md)。
+
+---
+
+## 九、开发启动方式
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/lingyezhixing/Concrete-Course-Design.git
+cd Concrete-Course-Design
+
+# 2. 后端（conda 环境，热重载）
+conda create -n concrete python=3.12 -y && conda activate concrete
+cd backend && pip install -r requirements-dev.txt
+uvicorn app.main:app --reload --port 8000     # API 文档: http://localhost:8000/docs
+
+# 3. 前端（另开终端，Vite HMR）
+cd frontend && npm install
+npm run dev                                    # http://localhost:3000，/api 代理到 8000
+```
+
+常用脚本：
+
+| 命令 | 说明 |
+|------|------|
+| `cd backend && pytest -v` | 后端测试 |
+| `cd frontend && npm run dev` | 前端开发服务器（HMR） |
+| `cd frontend && npm run build` | 前端生产构建（含 vue-tsc 类型检查） |
+| `cd frontend && npm run test:run` | 前端测试 |
+| `python build_win.py` | 构建 Windows 便携版 exe（需先 `pip install pyinstaller`） |
+
+开发约定与环境细节见 [开发指南](docs/开发指南.md)。
+
+---
+
+## 十、目录结构
+
+```
+Concrete-Course-Design/
+├── backend/                      # FastAPI 后端
+│   ├── app/
+│   │   ├── main.py               # 入口：CORS、路由、SPA 静态回落
+│   │   ├── config.py / security.py / logging_config.py
+│   │   ├── materials.py          # 材料强度与分项系数（单一来源）
+│   │   ├── api/                  # health / projects(/calculate) / snapshots
+│   │   ├── auth/                 # 注册登录 / get_current_user / repository
+│   │   ├── models/               # Pydantic 输入输出模型
+│   │   ├── solvers/              # 计算引擎：common / derive / slab / beam / main_beam
+│   │   └── data/                 # SQLite 连接与项目/快照仓库
+│   ├── tests/                    # 15 个测试文件，147 用例
+│   ├── run.py                    # PyInstaller 便携版入口
+│   ├── requirements.txt / requirements-dev.txt
+│   └── Dockerfile
+├── frontend/                     # Vue 3 + TypeScript 前端
+│   ├── src/
+│   │   ├── views/                # 9 个页面（登录/概览/参数/板/次梁/主梁/计算书/存档/设置）
+│   │   ├── components/           # layout / common / diagrams / report
+│   │   ├── composables/          # useAuth/useProject/useTheme/useReportDocument 等
+│   │   ├── report/               # 计算书文档模型与材料常量
+│   │   ├── api/ router/ config/ assets/
+│   ├── Dockerfile                # 多阶段构建（Nginx）
+│   ├── nginx.conf / vite.config.ts / vitest.config.ts
+│   └── package.json
+├── docs/                         # 详细文档（见下方导航）
+├── assets/logo.ico               # 应用图标
+├── build_win.py                  # Windows 便携版打包脚本（产物 → Portable/）
+├── Portable/                     # Windows 便携版 exe（可直接双击运行；最新版见 GitHub Releases）
+├── docker-compose.yml.example    # Docker Compose 编排示例
+├── .env.example                  # 环境变量模板
+└── LICENSE                       # MIT
+```
+
+---
+
+## 十一、已知不足与改进方向
+
+诚实披露以下局限（答辩可说明，详见 [已知不足与改进方向](docs/已知不足与改进方向.md)）：
+
+1. **主梁仅支持 3 跨**：不同于板和次梁的完整支持，三等分集中力系数表（表 14-4）只覆盖三等跨，4/5 跨方案需补充系数表（本组方案 A 为 3 跨，已够用）。
+
+2. **抵抗弯矩图**截断点以文字说明，未自动绘制纵筋详图（求解器尚无配筋构造详图引擎）。
+
+---
+
+## 十二、文档导航
+
+所有细节文档位于 [`docs/`](docs/)，索引见 [docs/README.md](docs/README.md)：
+
+| 文档 | 内容 |
+|------|------|
+| [课程背景与设计目标](docs/课程背景与设计目标.md) | 任务书对照、设计参数、本组方案 |
+| [功能详解](docs/功能详解.md) | 每个页面的功能与交互详述 |
+| [技术架构](docs/技术架构.md) | 前后端分层、数据库、鉴权、主题系统 |
+| [计算方法与公式](docs/计算方法与公式.md) | ★ 板 / 次梁 / 主梁完整公式、系数表与推导 |
+| [安装与运行](docs/安装与运行.md) | Windows / Linux 四种运行方式详解 |
+| [测试与验证](docs/测试与验证.md) | 测试用例清单、教师值回归、手算对比 |
+| [开发指南](docs/开发指南.md) | 开发环境、脚本、约定 |
+| [已知不足与改进方向](docs/已知不足与改进方向.md) | 局限与后续改进 |
+
+---
+
+## 许可证
+
+本项目基于 [MIT License](LICENSE) 开源，© 2026 lingyezhixing。欢迎学习参考，引用请注明来源。
