@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildReportDoc, buildBasicInfo, buildSlab, num } from './useReportDocument'
+import { buildReportDoc, buildBasicInfo, buildSlab, buildBeam, num } from './useReportDocument'
 import { emptyProjectData } from '../api/projects'
 import type { ProjectData } from '../api/projects'
 
@@ -33,6 +33,25 @@ function fixture(): ProjectData {
     }] },
   }
   d.slab.initialized = true
+  d.beam.result = {
+    load: { from_slab_dead: 5.81, self_weight: 1.6, plaster: 0.163,
+      dead_load_standard: 7.583, dead_load_design: 7.962,
+      live_load_standard: 8, live_load_design: 9.6 },
+    span: { middle_span: 6.0, edge_span: 5.88 },
+    converted: { converted_dead: 10.362, converted_live: 7.2 },
+    internal_forces: {
+      moments: [{ name: 'M1', value: 52.874 }, { name: 'MB', value: -70.013 }],
+      shears: [{ name: 'VA', value: 41.141 }, { name: 'VB左', value: -60.539 }],
+    },
+    reinforcement: {
+      flexure: [{ name: '1', section_type: 'T形(第一类)', width_used: 1960, moment: 52.874,
+        h0: 360, alpha_s: 0.026, xi: 0.0264, as_required: 661.5,
+        selected_bar: { count: 3, diameter: 18 }, as_provided: 763, status: 'ok' }],
+      shear: { max_shear: 60.539, vc: 55.44, asv_s: 0.177,
+        recommended_spacing: 200, stirrup_ratio: 0.0014 },
+    },
+  }
+  d.beam.initialized = true
   d.report = { name: '张三' }
   return d
 }
@@ -85,5 +104,14 @@ describe('buildSlab', () => {
     d.slab.initialized = false
     const blocks = buildSlab(d)
     expect(blocks.some((b) => b.kind === 'note')).toBe(true)
+  })
+})
+
+describe('buildBeam', () => {
+  it('含折算荷载 q/4 与斜截面公式', () => {
+    const blocks = buildBeam(fixture())
+    const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
+    expect(formulas.some((t) => t.includes("g' = g + q/4"))).toBe(true)
+    expect(formulas.some((t) => t.includes('0.7·ft·b·h₀'))).toBe(true)
   })
 })

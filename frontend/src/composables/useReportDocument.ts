@@ -32,6 +32,24 @@ interface SlabResult {
   reinforcement: { sections: SlabReinfSection[] }
 }
 
+// ── 梁（次梁/主梁共用）结果类型 ──
+interface Flexure {
+  name: string; moment: number; h0: number; section_type: string; width_used: number
+  alpha_s: number; xi: number; as_required: number
+  selected_bar: BeamBar | null; as_provided: number; status: string
+}
+interface BeamShear { max_shear: number; vc: number; asv_s: number
+  recommended_spacing: number; stirrup_ratio: number }
+interface BeamResult {
+  load: { from_slab_dead: number; self_weight: number; plaster: number
+    dead_load_standard: number; dead_load_design: number
+    live_load_standard: number; live_load_design: number }
+  span: { middle_span: number; edge_span: number }
+  converted: { converted_dead: number; converted_live: number }
+  internal_forces: { moments: NamedValue[]; shears: NamedValue[] }
+  reinforcement: { flexure: Flexure[]; shear: BeamShear }
+}
+
 // ── 格式化助手 ──
 /** 保留 d 位小数；空/非有限值返回 —。 */
 export function num(n: number | null | undefined, d = 2): string {
@@ -64,6 +82,9 @@ const figure = (
 // ── 安全读取 result（未计算时给空对象） ──
 function slabOf(d: ProjectData): SlabResult {
   return (d?.slab?.result ?? {}) as unknown as SlabResult
+}
+function beamOf(d: ProjectData): BeamResult {
+  return (d?.beam?.result ?? {}) as unknown as BeamResult
 }
 
 // ══════════════════════════════════════════════
@@ -159,12 +180,67 @@ export function buildSlab(d: ProjectData): ReportBlock[] {
   return out
 }
 
-// ── 装配入口（本任务含前三章；后续任务追加构件章节） ──
+/** 四、次梁设计 */
+export function buildBeam(d: ProjectData): ReportBlock[] {
+  const s = d.structure
+  const r = beamOf(d)
+  const ld = r.load ?? ({} as BeamResult['load'])
+  const cv = r.converted ?? ({} as BeamResult['converted'])
+  const sp = r.span ?? ({} as BeamResult['span'])
+  const sh = r.reinforcement?.shear ?? ({} as BeamShear)
+  const out: ReportBlock[] = [h2('次梁设计')]
+  if (!d.beam?.initialized) {
+    out.push(note('次梁尚未计算，本章略。', 'warn'))
+    return out
+  }
+  out.push(h3('荷载计算'))
+  out.push(formula(`板传来恒载 ${num(ld.from_slab_dead)} kN/m；次梁自重 ${num(ld.self_weight)} kN/m；粉刷 ${num(ld.plaster)} kN/m`))
+  out.push(formula(`恒载标准值 gₖ = ${num(ld.dead_load_standard)} kN/m；设计值 g = γG·gₖ = ${num(ld.dead_load_design)} kN/m`))
+  out.push(formula(`活载标准值 qₖ = ${num(ld.live_load_standard)} kN/m；设计值 q = γQ·qₖ = ${num(ld.live_load_design)} kN/m`))
+  out.push(formula(`折算荷载：g' = g + q/4 = ${num(cv.converted_dead)} kN/m；q' = 3q/4 = ${num(cv.converted_live)} kN/m`))
+  out.push(h3('计算跨度'))
+  out.push(formula(`边跨 l₀ = ${num(sp.edge_span)} m；中间跨 l₀ = ${num(sp.middle_span)} m`))
+  out.push(figure('图：次梁计算简图', 'uniformBeam', {
+    rawSpans: s.beam_spans ?? 0, edgeSpan: sp.edge_span, midSpan: sp.middle_span,
+    loadDead: cv.converted_dead, loadLive: cv.converted_live,
+    sectionType: 'beam', sectionSize: { b: s.beam_width ?? 0, h: s.beam_height ?? 0 },
+  }))
+  out.push(h3('内力计算'))
+  out.push(table('表：次梁弯矩 M（kN·m）', ['截面', '弯矩值'],
+    (r.internal_forces?.moments ?? []).map((m) => [m.name, num(m.value, 3)])))
+  out.push(table('表：次梁剪力 V（kN）', ['截面', '剪力值'],
+    (r.internal_forces?.shears ?? []).map((v) => [v.name, num(v.value, 3)])))
+  out.push(figure('图：次梁弯矩图 / 剪力图', 'internalForce', {
+    moments: r.internal_forces?.moments ?? [], shears: r.internal_forces?.shears ?? [],
+    rawSpans: s.beam_spans ?? 0, edgeSpan: sp.edge_span, midSpan: sp.middle_span,
+  }))
+  out.push(h3('正截面强度及配筋计算'))
+  out.push(table('表：次梁正截面强度及配筋',
+    ['截面', '类型', '计算宽', 'M (kN·m)', 'h0', 'αs', 'ξ', 'As需 (mm²)', '选筋', 'As实 (mm²)'],
+    (r.reinforcement?.flexure ?? []).map((f) => [
+      f.name, f.section_type, num(f.width_used, 0), num(f.moment, 3), num(f.h0, 0),
+      num(f.alpha_s, 4), num(f.xi, 4), Math.round(f.as_required), beamBarText(f.selected_bar), Math.round(f.as_provided),
+    ])))
+  out.push(figure('图：次梁截面配筋简图', 'sectionRebar', {
+    sections: (r.reinforcement?.flexure ?? []).map((f) => ({
+      name: f.name, shape: f.section_type?.includes('T') ? 't' : 'rect',
+      b: s.beam_width ?? 0, h: s.beam_height ?? 0,
+      bar: { diameter: f.selected_bar?.diameter ?? 0, count: f.selected_bar?.count ?? 0 },
+    })),
+  }))
+  out.push(h3('斜截面受剪承载力'))
+  out.push(formula(`最大剪力 V = ${num(sh.max_shear, 3)} kN；混凝土受剪 Vc = 0.7·ft·b·h₀ = ${num(sh.vc, 2)} kN`))
+  out.push(formula(`Asv/s = (γd·V − Vc)/(fyv·h₀) = ${num(sh.asv_s, 4)} mm²/mm；推荐箍筋间距 ${num(sh.recommended_spacing, 0)} mm；配箍率 ρsv = ${num(sh.stirrup_ratio, 4)}`))
+  return out
+}
+
+// ── 装配入口（本任务含前四章；后续任务追加构件章节） ──
 export function buildReportDoc(d: ProjectData): ReportDoc {
   const sections: ReportSection[] = [
     { id: 'basic', number: '一', title: '设计基本资料', blocks: buildBasicInfo(d) },
     { id: 'layout', number: '二', title: '结构平面布置及构件截面尺寸初估', blocks: buildLayoutAndSize(d) },
     { id: 'slab', number: '三', title: '板设计', blocks: buildSlab(d) },
+    { id: 'beam', number: '四', title: '次梁设计', blocks: buildBeam(d) },
   ]
   return { cover: d.report ?? {}, sections }
 }
