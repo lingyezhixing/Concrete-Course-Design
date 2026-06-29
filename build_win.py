@@ -49,6 +49,25 @@ def build_frontend():
     print(f"  前端构建完成: {FRONTEND_DIST}")
 
 
+def _conda_ssl_binaries():
+    """收集 conda 环境的 OpenSSL DLL（libssl / libcrypto），打包到 bundle 根目录。
+
+    conda 把这些 DLL 放在 <env>/Library/bin/，PyInstaller 的 _ssl hook 默认只查
+    Python 的 DLLs/ 目录、找不到它们；打包后运行会报
+    `ImportError: DLL load failed while importing _ssl: 找不到指定的程序。`
+    （_ssl.pyd 缺少匹配的 OpenSSL 运行时）。显式把这两个 DLL 放到 exe 同级即可。
+    标准 venv 无此目录，glob 返回空，跳过（其 _ssl 由 PyInstaller 正常处理）。
+    """
+    env_bin = Path(sys.prefix) / "Library" / "bin"
+    out = []
+    if env_bin.is_dir():
+        for pattern in ("libssl*.dll", "libcrypto*.dll"):
+            for dll in env_bin.glob(pattern):
+                out.append(f"--add-binary={dll}{os.pathsep}.")
+                print(f"  + OpenSSL DLL: {dll.name}")
+    return out
+
+
 def build_exe():
     print("=" * 60)
     print("  2/2  PyInstaller 打包 (--onefile) → Portable/")
@@ -82,6 +101,9 @@ def build_exe():
         "--clean",
         "--noconfirm",
     ]
+
+    # conda 环境需要显式打包 OpenSSL 运行时（见 _conda_ssl_binaries 说明）
+    args.extend(_conda_ssl_binaries())
 
     if ICON_PATH.is_file():
         args.append(f"--icon={ICON_PATH}")
