@@ -82,6 +82,13 @@ class SlabMomentResult(BaseModel):
 
     name: str = Field(description="位置名称，如 M1, MB, M2...")
     value: float = Field(description="弯矩设计值 (kN·m/m)")
+    # 内力系数推导明细（供计算书渲染，默认 0 兼容旧数据）
+    l0: float = Field(default=0.0, description="采用的计算跨度 l0 (m)")
+    alpha: float = Field(default=0.0, description="恒载弯矩系数 α")
+    alpha1: float = Field(default=0.0, description="活载弯矩系数 α1")
+    g_l0_sq: float = Field(default=0.0, description="g·l0²")
+    q_l0_sq: float = Field(default=0.0, description="q·l0²")
+    m_raw: float = Field(default=0.0, description="α·g·l0²+α1·q·l0²（边缘调整前）")
 
 
 class SlabShearResult(BaseModel):
@@ -89,6 +96,12 @@ class SlabShearResult(BaseModel):
 
     name: str = Field(description="位置名称，如 VA, Vl_B, Vr_B, VC...")
     value: float = Field(description="剪力设计值 (kN/m)")
+    # 内力系数推导明细
+    ln: float = Field(default=0.0, description="采用的净跨度 ln (m)")
+    beta: float = Field(default=0.0, description="恒载剪力系数 β")
+    beta1: float = Field(default=0.0, description="活载剪力系数 β1")
+    g_ln: float = Field(default=0.0, description="g·ln")
+    q_ln: float = Field(default=0.0, description="q·ln")
 
 
 class SlabInternalForceOutput(BaseModel):

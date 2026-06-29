@@ -19,7 +19,7 @@ from app.models.beam import (
     BeamFullResult,
     BeamReinforcementOutput,
 )
-from app.solvers.common import calc_continuous_beam_internal_forces
+from app.solvers.common import calc_continuous_beam_internal_forces_detailed
 from app.solvers.beam.utils import calc_beam_flexure, calc_beam_shear
 
 __all__ = [
@@ -131,7 +131,7 @@ def calculate_beam_internal_forces(
 
     支座边缘弯矩调整：M' = M + (b/2)·V₀，V₀ = (g'+q')·l₀/2（简支支座剪力）。
     内力计算主体（含 >5 跨简化）共用
-    :func:`app.solvers.common.calc_continuous_beam_internal_forces`。
+    :func:`app.solvers.common.calc_continuous_beam_internal_forces_detailed`。
     """
     g = converted.converted_dead
     q = converted.converted_live
@@ -140,14 +140,28 @@ def calculate_beam_internal_forces(
     b_support_m = inp.support_width / 1000.0
     support_delta = (b_support_m / 2.0) * (g + q) * spans.middle_span / 2.0
 
-    moments_raw, shears_raw = calc_continuous_beam_internal_forces(
+    moments_raw, shears_raw = calc_continuous_beam_internal_forces_detailed(
         g=g, q=q, n=inp.spans,
         middle_span=spans.middle_span, edge_span=spans.edge_span,
         middle_net=net_spans.middle_net, edge_net=net_spans.edge_net,
         support_moment_delta=support_delta,
     )
-    moments = [BeamMomentResult(name=name, value=v) for name, v in moments_raw]
-    shears = [BeamShearResult(name=name, value=v) for name, v in shears_raw]
+    moments = [
+        BeamMomentResult(
+            name=m.name, value=m.value, l0=m.l0,
+            alpha=m.alpha, alpha1=m.alpha1,
+            g_l0_sq=m.g_l0_sq, q_l0_sq=m.q_l0_sq, m_raw=m.m_raw,
+        )
+        for m in moments_raw
+    ]
+    shears = [
+        BeamShearResult(
+            name=s.name, value=s.value, ln=s.ln,
+            beta=s.beta, beta1=s.beta1,
+            g_ln=s.g_ln, q_ln=s.q_ln,
+        )
+        for s in shears_raw
+    ]
     return BeamInternalForceOutput(moments=moments, shears=shears)
 
 

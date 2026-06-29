@@ -12,7 +12,7 @@ from app.models.slab import (
     SlabReinforcementOutput,
     SlabFullResult,
 )
-from app.solvers.common import calc_continuous_beam_internal_forces
+from app.solvers.common import calc_continuous_beam_internal_forces_detailed
 from app.solvers.slab.utils import calc_section_reinforcement
 
 __all__ = [
@@ -125,9 +125,9 @@ def calculate_internal_forces(
     V = β·g·ln + β1·q·ln     (剪力，用净跨度 ln)
 
     内力计算主体（含 >5 跨的 5 跨简化）与次梁共用
-    :func:`app.solvers.common.calc_continuous_beam_internal_forces`；板无支座边缘调整。
+    :func:`app.solvers.common.calc_continuous_beam_internal_forces_detailed`；板无支座边缘调整。
     """
-    moments_raw, shears_raw = calc_continuous_beam_internal_forces(
+    moments_raw, shears_raw = calc_continuous_beam_internal_forces_detailed(
         g=converted.converted_dead,
         q=converted.converted_live,
         n=inp.spans,
@@ -136,8 +136,22 @@ def calculate_internal_forces(
         middle_net=net_spans.middle_net,
         edge_net=net_spans.edge_net,
     )
-    moments = [SlabMomentResult(name=name, value=v) for name, v in moments_raw]
-    shears = [SlabShearResult(name=name, value=v) for name, v in shears_raw]
+    moments = [
+        SlabMomentResult(
+            name=m.name, value=m.value, l0=m.l0,
+            alpha=m.alpha, alpha1=m.alpha1,
+            g_l0_sq=m.g_l0_sq, q_l0_sq=m.q_l0_sq, m_raw=m.m_raw,
+        )
+        for m in moments_raw
+    ]
+    shears = [
+        SlabShearResult(
+            name=s.name, value=s.value, ln=s.ln,
+            beta=s.beta, beta1=s.beta1,
+            g_ln=s.g_ln, q_ln=s.q_ln,
+        )
+        for s in shears_raw
+    ]
     return SlabInternalForceOutput(moments=moments, shears=shears)
 
 
