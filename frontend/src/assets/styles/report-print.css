@@ -1,5 +1,10 @@
-/* 计算书打印样式：隐藏 app 外壳，使报告文档自然流入打印页。
-   由 main.ts 全局引入生效 @media print；不使用 position:absolute（浏览器多页打印时截断问题）。
+/* 计算书打印样式。由 main.ts 全局引入。
+   注意 CSS 类名必须与真实 DOM 一致（已验证 2026-06-30）：
+     - AppHeader → .topbar
+     - AppSidebar → .sidebar
+     - AppLayout → .app-layout / .app-body / .app-main
+     - PageHeader → .page-header
+     - Report.vue → .report / .block.toolbar / .block.preview / .report-document
    scoped 样式中的背景/颜色在打印时须被 !important 覆盖（尤其暗色主题）。 */
 
 @media print {
@@ -8,26 +13,39 @@
     margin: 16mm 14mm;
   }
 
-  /* ─── 隐藏非打印元素 ─── */
-  .app-header,
-  .app-sidebar,
+  /* ─── 隐藏所有非计算书的外壳/工具条 ─── */
+  .topbar,
+  .sidebar,
+  .sidebar-backdrop,
   .page-header,
   .block.toolbar,
   .save-state,
   .ready-hint,
-  .el-button,
-  .block-title:has(+ .cover-form),
-  .cover-form {
+  .el-button {
     display: none !important;
   }
 
-  /* 让 .report 正常占据整宽 */
+  /* ─── app 容器不再限高，让内容自然流动 ─── */
+  .app-layout {
+    height: auto !important;
+    display: block !important;
+  }
+  .app-body {
+    display: block !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+  }
+  .app-main {
+    overflow: visible !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  /* ─── 报告容器 ─── */
   .report {
     width: 100% !important;
     display: block !important;
   }
-
-  /* preview 容器脱去屏幕样式 */
   .block.preview {
     background: none !important;
     padding: 0 !important;
@@ -36,10 +54,8 @@
     border-radius: 0 !important;
     box-shadow: none !important;
   }
-
-  /* ─── 计算书文档 ─── */
   .report-document {
-    position: static !important;        /* 脱离 absolute，正常流分页打印 */
+    position: static !important;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
@@ -48,10 +64,9 @@
     border-radius: 0 !important;
     background: #fff !important;
     color: #000 !important;
-    visibility: visible !important;
   }
 
-  /* ─── 暗色主题强制 ─── */
+  /* ─── 计算书正文（ReportDocument.vue 的 scoped 样式覆盖） ─── */
   .rp-doc,
   .rp-doc * {
     color: #000 !important;
