@@ -1,6 +1,11 @@
 <template>
   <div class="params">
-    <PageHeader title="设计参数" subtitle="结构、材料与荷载参数配置" />
+    <PageHeader title="设计参数" subtitle="结构、材料与荷载参数配置">
+      <template #action>
+        <el-button size="small" @click="fillDemo">填入演示参数</el-button>
+        <el-button size="small" @click="clearAll">清空</el-button>
+      </template>
+    </PageHeader>
 
     <!-- 守卫：无活动项目 -->
     <section v-if="!isActive()" class="block">
@@ -26,21 +31,21 @@
           </el-form-item>
           <el-form-item label="板厚（mm）">
             <el-input-number v-model="data!.structure.slab_thickness" :precision="0" controls-position="right" />
-            <span class="hint">{{ slabThickHint }}</span>
+            <span class="hint span-hint">{{ slabThickHint }}</span>
           </el-form-item>
           <el-form-item label="次梁宽 b（mm）">
             <el-input-number v-model="data!.structure.beam_width" :precision="0" controls-position="right" />
           </el-form-item>
           <el-form-item label="次梁高 h（mm）">
             <el-input-number v-model="data!.structure.beam_height" :precision="0" controls-position="right" />
-            <span class="hint">{{ beamRatioHint }}</span>
+            <span class="hint span-hint">{{ beamRatioHint }}</span>
           </el-form-item>
           <el-form-item label="主梁宽 b（mm）">
             <el-input-number v-model="data!.structure.main_beam_width" :precision="0" controls-position="right" />
           </el-form-item>
           <el-form-item label="主梁高 h（mm）">
             <el-input-number v-model="data!.structure.main_beam_height" :precision="0" controls-position="right" />
-            <span class="hint">{{ mainBeamRatioHint }}</span>
+            <span class="hint span-hint">{{ mainBeamRatioHint }}</span>
           </el-form-item>
           <el-form-item label="柱宽（mm）">
             <el-input-number v-model="data!.structure.column_width" :precision="0" controls-position="right" />
@@ -48,15 +53,15 @@
 
           <el-form-item label="板跨数">
             <el-input-number v-model="data!.structure.slab_spans" :min="2" :step="1" :precision="0" controls-position="right" />
-            <span class="hint">{{ slabSpanHint }}</span>
+            <span class="hint span-hint">{{ slabSpanHint }}</span>
           </el-form-item>
           <el-form-item label="次梁跨数">
             <el-input-number v-model="data!.structure.beam_spans" :min="2" :step="1" :precision="0" controls-position="right" />
-            <span class="hint">{{ beamSpanHint }}</span>
+            <span class="hint span-hint">{{ beamSpanHint }}</span>
           </el-form-item>
           <el-form-item label="主梁跨数">
             <el-input-number v-model="data!.structure.main_beam_spans" :min="2" :step="1" :precision="0" controls-position="right" />
-            <span class="hint">{{ mainBeamSpanHint }}</span>
+            <span class="hint span-hint">{{ mainBeamSpanHint }}</span>
           </el-form-item>
           <el-form-item label="次梁箍筋直径（mm）">
             <el-input-number v-model="data!.structure.beam_stirrup_diameter" :min="1" :precision="0" controls-position="right" />
@@ -186,6 +191,36 @@ function missingFields(): string[] {
   return miss
 }
 
+function fillDemo(): void {
+  if (!data.value) return
+  data.value.structure.L1 = 30.00
+  data.value.structure.L2 = 18.00
+  data.value.structure.slab_thickness = 120
+  data.value.structure.beam_width = 200
+  data.value.structure.beam_height = 500
+  data.value.structure.main_beam_width = 300
+  data.value.structure.main_beam_height = 600
+  data.value.structure.column_width = 350
+  data.value.structure.slab_spans = 9
+  data.value.structure.beam_spans = 5
+  data.value.structure.main_beam_spans = 3
+  data.value.structure.beam_stirrup_diameter = 6
+  data.value.structure.main_beam_stirrup_diameter = 10
+  data.value.loads.reinforced_concrete_weight = 25.00
+  data.value.loads.terrazzo_surface = 0.65
+  data.value.loads.plaster_thickness = 15.0
+  data.value.loads.plaster_weight = 17.00
+  data.value.loads.live_load = 4.00
+}
+
+function clearAll(): void {
+  if (!data.value) return
+  const s = data.value.structure
+  for (const k of REQUIRED_STRUCTURE) s[k] = null as never
+  const l = data.value.loads
+  for (const k of REQUIRED_LOADS) l[k] = null as never
+}
+
 async function confirmCalc(): Promise<void> {
   if (!data.value) return
   const miss = missingFields()
@@ -247,6 +282,10 @@ async function confirmCalc(): Promise<void> {
   color: var(--muted-foreground);
   margin-top: 2px;
   line-height: 1.3;
+}
+.span-hint {
+  color: var(--primary);
+  font-weight: 500;
 }
 .derived {
   margin: var(--space-3) 0 0;
