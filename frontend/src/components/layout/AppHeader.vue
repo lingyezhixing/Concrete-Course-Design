@@ -2,7 +2,6 @@
   <header class="topbar">
     <div class="left">
         <span class="brand" :title="isOnline ? '后端已连接' : '后端连接中断'">
-          <img src="/logo.ico" class="brand-logo" alt="logo" />
           <span class="led" :class="isOnline ? 'on' : 'off'">
             <span v-if="isOnline" class="led-dot" />
           </span>
@@ -78,11 +77,6 @@ onUnmounted(stop)
   padding: 0 var(--space-1);
   color: var(--foreground);
   min-width: 0;
-}
-.brand-logo {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
 }
 .brand-text {
   font-size: var(--text-lg);
