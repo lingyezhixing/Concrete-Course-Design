@@ -194,6 +194,12 @@
           </div>
         </section>
 
+        <!-- 弯矩图 / 剪力图 -->
+        <section v-if="mvData" class="block">
+          <h2 class="block-title">弯矩图 / 剪力图</h2>
+          <InternalForceDiagram v-bind="mvData" />
+        </section>
+
         <!-- 配筋 -->
         <section class="block">
           <h2 class="block-title">配筋</h2>
@@ -259,6 +265,10 @@
               </template>
             </el-table-column>
           </el-table>
+          <div v-if="rebarSections.length" style="margin-top: var(--space-4);">
+            <h3 class="sub-title">截面配筋简图</h3>
+            <SectionRebarDiagram :sections="rebarSections" />
+          </div>
         </section>
     </div>
   </div>
@@ -273,6 +283,8 @@ import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
 import UniformLoadBeamDiagram from '../components/diagrams/UniformLoadBeamDiagram.vue'
+import SectionRebarDiagram from '../components/diagrams/SectionRebarDiagram.vue'
+import InternalForceDiagram from '../components/diagrams/InternalForceDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -345,6 +357,46 @@ const diagram = computed(() => {
     loadLive: r.converted.converted_live,
     sectionType: 'slab' as const,
     sectionSize: { h: s.slab_thickness },
+  }
+})
+
+/** 截面配筋简图数据（板：板带 + Φd@s）。 */
+const rebarSections = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.slab?.result as
+    | { reinforcement?: { sections?: ReinfSection[] } }
+    | undefined
+  if (!s || !r?.reinforcement?.sections) return []
+  return r.reinforcement.sections.map((sec) => ({
+    name: sec.name,
+    shape: 'slab' as const,
+    b: 1000,
+    h: s.slab_thickness ?? 0,
+    bar: {
+      diameter: sec.selected_bar?.diameter ?? 0,
+      spacing: sec.selected_bar?.spacing ?? 0,
+    },
+  }))
+})
+
+/** 弯矩 / 剪力图入参：跨数 / 跨度 / 内力齐备时才渲染。 */
+const mvData = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.slab?.result as
+    | {
+        span?: { edge_span?: number; middle_span?: number }
+        internal_forces?: { moments?: NamedValue[]; shears?: NamedValue[] }
+      }
+    | undefined
+  if (!s || s.slab_spans == null) return null
+  if (r?.span?.edge_span == null || r?.span?.middle_span == null) return null
+  if (!r.internal_forces?.moments?.length || !r.internal_forces?.shears?.length) return null
+  return {
+    moments: r.internal_forces.moments,
+    shears: r.internal_forces.shears,
+    rawSpans: s.slab_spans,
+    edgeSpan: r.span.edge_span,
+    midSpan: r.span.middle_span,
   }
 })
 

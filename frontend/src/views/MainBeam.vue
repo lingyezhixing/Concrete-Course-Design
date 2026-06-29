@@ -102,6 +102,10 @@
             <template #default="{ row }"><el-tag :type="reinfTagType(row.status)" size="small" effect="plain">{{ reinfLabel(row.status) }}</el-tag></template>
           </el-table-column>
         </el-table>
+        <div v-if="rebarSections.length" style="margin-top: var(--space-4);">
+          <h3 class="sub-title">截面配筋简图</h3>
+          <SectionRebarDiagram :sections="rebarSections" />
+        </div>
       </section>
 
       <!-- 斜截面箍筋与吊筋 -->
@@ -129,6 +133,7 @@ import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
 import MainBeamDiagram from '../components/diagrams/MainBeamDiagram.vue'
+import SectionRebarDiagram from '../components/diagrams/SectionRebarDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -170,6 +175,22 @@ const diagram = computed(() => {
     columnWidth: s.column_width,
     sectionSize: { b: s.main_beam_width, h: s.main_beam_height },
   }
+})
+
+/** 截面配筋简图数据（主梁：T 形 / 矩形 + nΦd）。 */
+const rebarSections = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.main_beam?.result as
+    | { reinforcement?: { flexure?: Flexure[] } }
+    | undefined
+  if (!s || !r?.reinforcement?.flexure) return []
+  return r.reinforcement.flexure.map((f) => ({
+    name: f.name,
+    shape: (f.section_type?.includes('T') ? 't' : 'rect') as 't' | 'rect',
+    b: f.width_used,
+    h: s.main_beam_height ?? 0,
+    bar: { diameter: f.selected_bar?.diameter ?? 0, count: f.selected_bar?.count ?? 0 },
+  }))
 })
 
 function updateBar(row: Flexure, field: 'count' | 'diameter', v: number | undefined): void {

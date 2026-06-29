@@ -90,6 +90,12 @@
         </div>
       </section>
 
+      <!-- 弯矩图 / 剪力图 -->
+      <section v-if="mvData" class="block">
+        <h2 class="block-title">弯矩图 / 剪力图</h2>
+        <InternalForceDiagram v-bind="mvData" />
+      </section>
+
       <!-- 正截面配筋 -->
       <section class="block">
         <h2 class="block-title">正截面配筋</h2>
@@ -119,6 +125,10 @@
             <template #default="{ row }"><el-tag :type="reinfTagType(row.status)" size="small" effect="plain">{{ reinfLabel(row.status) }}</el-tag></template>
           </el-table-column>
         </el-table>
+        <div v-if="rebarSections.length" style="margin-top: var(--space-4);">
+          <h3 class="sub-title">截面配筋简图</h3>
+          <SectionRebarDiagram :sections="rebarSections" />
+        </div>
       </section>
 
       <!-- 斜截面箍筋 -->
@@ -145,6 +155,8 @@ import EmptyState from '../components/common/EmptyState.vue'
 import { useProject } from '../composables/useProject'
 import { reinfLabel, reinfTagType } from '../composables/useReinfStatus'
 import UniformLoadBeamDiagram from '../components/diagrams/UniformLoadBeamDiagram.vue'
+import SectionRebarDiagram from '../components/diagrams/SectionRebarDiagram.vue'
+import InternalForceDiagram from '../components/diagrams/InternalForceDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -193,6 +205,43 @@ const diagram = computed(() => {
     loadLive: r.converted.converted_live,
     sectionType: 'beam' as const,
     sectionSize: { b: s.beam_width, h: s.beam_height },
+  }
+})
+
+/** 截面配筋简图数据（次梁：T 形 / 矩形 + nΦd）。 */
+const rebarSections = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.beam?.result as
+    | { reinforcement?: { flexure?: Flexure[] } }
+    | undefined
+  if (!s || !r?.reinforcement?.flexure) return []
+  return r.reinforcement.flexure.map((f) => ({
+    name: f.name,
+    shape: (f.section_type?.includes('T') ? 't' : 'rect') as 't' | 'rect',
+    b: f.width_used,
+    h: s.beam_height ?? 0,
+    bar: { diameter: f.selected_bar?.diameter ?? 0, count: f.selected_bar?.count ?? 0 },
+  }))
+})
+
+/** 弯矩 / 剪力图入参。 */
+const mvData = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.beam?.result as
+    | {
+        span?: { edge_span?: number; middle_span?: number }
+        internal_forces?: { moments?: NamedValue[]; shears?: NamedValue[] }
+      }
+    | undefined
+  if (!s || s.beam_spans == null) return null
+  if (r?.span?.edge_span == null || r?.span?.middle_span == null) return null
+  if (!r.internal_forces?.moments?.length || !r.internal_forces?.shears?.length) return null
+  return {
+    moments: r.internal_forces.moments,
+    shears: r.internal_forces.shears,
+    rawSpans: s.beam_spans,
+    edgeSpan: r.span.edge_span,
+    midSpan: r.span.middle_span,
   }
 })
 
