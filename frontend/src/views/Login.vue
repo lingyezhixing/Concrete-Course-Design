@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-card">
       <div class="brand">
-        <component :is="Building2" :size="26" />
+        <img src="/logo.ico" class="brand-logo" alt="logo" />
       </div>
       <h1 class="title">混凝土课程设计计算平台</h1>
       <p class="subtitle">
@@ -68,7 +68,6 @@
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Building2 } from '@lucide/vue'
 import { useAuth } from '../composables/useAuth'
 
 type Mode = 'login' | 'register'
@@ -178,9 +177,10 @@ async function submit(): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: var(--primary);
-  color: var(--primary-foreground);
+}
+.brand-logo {
+  width: 100%;
+  height: 100%;
 }
 .title {
   margin: 0;

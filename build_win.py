@@ -6,8 +6,7 @@
 
 流程:
   1. npm run build (前端构建)
-  2. PyInstaller --onedir (打包后端 + 前端 dist)
-  3. 输出到 build/win/ConcreteCourseDesign/
+  2. PyInstaller --onefile (打包后端 + 前端 dist + exe 图标)
 """
 import os
 import subprocess
@@ -21,6 +20,7 @@ EXE_PATH = BUILD_DIR / "ConcreteCourseDesign.exe"
 WORK_DIR = BUILD_DIR / "_work"
 ENTRY = ROOT / "backend" / "run.py"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
+ICON_PATH = ROOT / "assets" / "logo.ico"
 
 
 def build_frontend():
@@ -41,10 +41,9 @@ def build_frontend():
 
 def build_exe():
     print("=" * 60)
-    print("  2/2  PyInstaller 打包 (--onedir)")
+    print("  2/2  PyInstaller 打包 (--onefile)")
     print("=" * 60)
 
-    # 清理旧构建（只清理 _work 目录，不删 distpath）
     for p in [WORK_DIR, ROOT / "ConcreteCourseDesign.spec"]:
         if p.exists():
             if p.is_dir():
@@ -52,14 +51,10 @@ def build_exe():
             else:
                 p.unlink()
 
-    # 清理旧的 exe
-    old_exe = EXE_PATH
-    if old_exe.exists():
-        old_exe.unlink()
+    if EXE_PATH.exists():
+        EXE_PATH.unlink()
 
-    from PyInstaller import __main__ as pyi
-
-    pyi.run([
+    args = [
         str(ENTRY),
         "--onefile",
         f"--name=ConcreteCourseDesign",
@@ -74,13 +69,17 @@ def build_exe():
         "--collect-all=app",
         "--clean",
         "--noconfirm",
-    ])
+    ]
 
-    # 清理 .spec 文件
+    if ICON_PATH.is_file():
+        args.append(f"--icon={ICON_PATH}")
+
+    from PyInstaller import __main__ as pyi
+    pyi.run(args)
+
     spec_file = ROOT / "ConcreteCourseDesign.spec"
     if spec_file.exists():
         spec_file.unlink()
-
     if WORK_DIR.exists():
         shutil.rmtree(WORK_DIR, ignore_errors=True)
 
