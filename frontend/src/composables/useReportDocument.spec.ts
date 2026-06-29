@@ -109,13 +109,19 @@ describe('buildReportDoc', () => {
 })
 
 describe('buildSlab', () => {
-  it('含荷载/折算/跨度公式与配筋表', () => {
+  it('含荷载逐项推导与折算公式', () => {
     const blocks = buildSlab(fixture())
     const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
-    expect(formulas.some((t) => t.includes('g = γG·gₖ'))).toBe(true)
+    expect(formulas.some((t) => t.includes('恒载标准值 gₖ ='))).toBe(true)
+    expect(formulas.some((t) => t.includes('g = γG · gₖ'))).toBe(true)
     expect(formulas.some((t) => t.includes("g' = g + q/2"))).toBe(true)
     const tables = blocks.filter((b) => b.kind === 'table') as Array<{ headers: string[]; rows: (string | number)[][] }>
     expect(tables.some((t) => t.headers.includes('选筋'))).toBe(true)
+  })
+  it('含正截面公式代入与配筋率验算', () => {
+    const blocks = buildSlab(fixture())
+    const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
+    expect(formulas.some((t) => t.includes('配筋率验算：ρ ='))).toBe(true)
   })
   it('未计算时给出 warn 提示', () => {
     const d = fixture()
@@ -126,20 +132,22 @@ describe('buildSlab', () => {
 })
 
 describe('buildBeam', () => {
-  it('含折算荷载 q/4 与斜截面公式', () => {
+  it('含荷载逐项推导、折算荷载 q/4 与斜截面公式', () => {
     const blocks = buildBeam(fixture())
     const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
     expect(formulas.some((t) => t.includes("g' = g + q/4"))).toBe(true)
     expect(formulas.some((t) => t.includes('0.7·ft·b·h₀'))).toBe(true)
+    expect(formulas.some((t) => t.includes('配筋率验算：ρ ='))).toBe(true)
   })
 })
 
 describe('buildMainBeam', () => {
-  it('含集中荷载/吊筋公式与控制内力表', () => {
+  it('含荷载逐项推导、配筋验算与吊筋公式', () => {
     const blocks = buildMainBeam(fixture())
     const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
-    expect(formulas.some((t) => t.includes('G = γG·Gk'))).toBe(true)
-    expect(formulas.some((t) => t.includes('吊筋所需面积'))).toBe(true)
+    expect(formulas.some((t) => t.includes('G = γG · Gk'))).toBe(true)
+    expect(formulas.some((t) => t.includes('吊筋 Asb'))).toBe(true)
+    expect(formulas.some((t) => t.includes('配筋率验算：ρ ='))).toBe(true)
     const tables = blocks.filter((b) => b.kind === 'table') as Array<{ headers: string[] }>
     expect(tables.some((t) => t.headers.includes('M1 (kN·m)'))).toBe(true)
   })
