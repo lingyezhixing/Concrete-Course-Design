@@ -1,4 +1,5 @@
 import api from './index'
+import type { CoverInfo } from '../report/types'
 
 export interface Structure {
   L1: number | null
@@ -35,6 +36,8 @@ export interface ProjectData {
   slab: ComponentState
   beam: ComponentState
   main_beam: ComponentState
+  /** 计算书封面信息（可选；现有项目无此字段时按空对象处理） */
+  report: CoverInfo
 }
 
 export interface ProjectPublic {
@@ -76,6 +79,7 @@ export function emptyProjectData(): ProjectData {
     slab: comp(),
     beam: comp(),
     main_beam: comp(),
+    report: {},
   }
 }
 
