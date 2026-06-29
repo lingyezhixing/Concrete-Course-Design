@@ -44,7 +44,6 @@ frontend/dist/
 docker-compose.yml
 
 # Local helper scripts
-start-backend.bat
 
 # Database
 data/

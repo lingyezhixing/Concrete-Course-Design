@@ -27,6 +27,8 @@ uvicorn app.main:app --reload --port 8000
 
 API 文档: http://localhost:8000/docs
 
+> 可选：复制 `.env.example` 为 `.env` 以自定义 JWT 密钥、CORS 源等配置（默认值可直接用于本地开发）。
+
 ### 前端
 
 ```bash
@@ -145,8 +147,8 @@ docker compose up -d
 ├── build_win.py                   # Windows 便携版打包脚本
 ├── assets/
 │   └── logo.ico                   # exe 图标
+├── .env.example                     # 环境变量配置模板
 ├── docker-compose.yml.example
-├── start-backend.bat
 └── README.md
 ```
 
