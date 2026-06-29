@@ -1,9 +1,23 @@
 """SQLite 数据库连接与基础配置"""
 
+import sys
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "app.db"
+
+def _get_db_path() -> Path:
+    """返回可写的数据库目录：
+    - PyInstaller 打包后 → exe 同级 data/
+    - 源码模式 → 项目根目录 data/
+    """
+    if getattr(sys, "frozen", False):
+        base = Path(sys.executable).parent
+    else:
+        base = Path(__file__).resolve().parent.parent.parent
+    return base / "data" / "app.db"
+
+
+DB_PATH = _get_db_path()
 
 
 def get_connection() -> sqlite3.Connection:

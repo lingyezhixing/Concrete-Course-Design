@@ -23,3 +23,7 @@ CORS_ORIGINS = [
     for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
     if origin.strip()
 ]
+
+# 静态文件托管（Windows 便携版/安装版启用）
+SERVE_STATIC = os.environ.get("SERVE_STATIC", "").lower() in ("1", "true", "yes")
+STATIC_DIR = os.environ.get("STATIC_DIR", "")

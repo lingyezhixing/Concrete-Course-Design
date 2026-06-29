@@ -5,8 +5,8 @@
 这里的 handler 才能存活。"""
 from __future__ import annotations
 
+import sys as _sys
 import logging
-import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +17,18 @@ _DATEFMT = "%Y-%m-%d %H:%M:%S"
 
 _logging_configured = False
 logger = logging.getLogger(__name__)
+
+
+def _get_log_dir() -> Path:
+    """返回可写的日志目录：
+    - PyInstaller 打包后 → exe 同级 logs/
+    - 源码模式 → 项目根目录 logs/
+    """
+    if getattr(_sys, "frozen", False):
+        base = Path(_sys.executable).parent
+    else:
+        base = Path(__file__).resolve().parent.parent
+    return base / "logs"
 
 
 def _cleanup_old_logs(log_dir: str, keep: int = KEEP_LOGS) -> None:
@@ -33,7 +45,7 @@ def _cleanup_old_logs(log_dir: str, keep: int = KEEP_LOGS) -> None:
             pass
 
 
-def setup_logging(level: str = "INFO", log_dir: str = "logs") -> None:
+def setup_logging(level: str = "INFO", log_dir: str | None = None) -> None:
     """配置 root logger（一次性）：控制台 + 每次启动一个时间戳文件（留 10 个）。
 
     必须在 FastAPI lifespan 中调用：uvicorn 启动会用 ``dictConfig`` 覆盖 root handlers，
@@ -41,6 +53,9 @@ def setup_logging(level: str = "INFO", log_dir: str = "logs") -> None:
     global _logging_configured
     if _logging_configured:
         return
+
+    if log_dir is None:
+        log_dir = str(_get_log_dir())
 
     numeric = getattr(logging, level.upper(), logging.INFO)
     root = logging.getLogger()
@@ -50,7 +65,7 @@ def setup_logging(level: str = "INFO", log_dir: str = "logs") -> None:
 
     formatter = logging.Formatter(_FORMAT, _DATEFMT)
 
-    console = logging.StreamHandler(sys.stdout)
+    console = logging.StreamHandler(_sys.stdout)
     console.setLevel(numeric)
     console.setFormatter(formatter)
     root.addHandler(console)
