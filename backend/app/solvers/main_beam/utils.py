@@ -124,8 +124,13 @@ def calc_main_beam_shear(
     stirrup_legs: int = 2,
     fyv: float = 270,
     hanger_force: float | None = None,
+    vc_coef: float = 0.5,
 ) -> ShearDesignResult:
-    """主梁斜截面箍筋与吊筋（委托 :func:`app.solvers.common.calc_shear_design`）。"""
+    """主梁斜截面箍筋与吊筋（委托 :func:`app.solvers.common.calc_shear_design`）。
+
+    主梁以集中荷载（次梁传来）为主，混凝土受剪系数 vc_coef 取 0.5，
+    区别于均布荷载为主的一般受剪构件（次梁）的 0.7。
+    """
     return calc_shear_design(
         max_shear=max_shear,
         b=b, h=h, cover=cover, bar_diameter=bar_diameter,
@@ -134,4 +139,5 @@ def calc_main_beam_shear(
         stirrup_legs=stirrup_legs,
         fyv=fyv,
         hanger_force=hanger_force,
+        vc_coef=vc_coef,
     )

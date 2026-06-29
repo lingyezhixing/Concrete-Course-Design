@@ -180,7 +180,7 @@ class TestMainBeamShear:
     """主梁斜截面箍筋与吊筋"""
 
     def test_stirrup(self):
-        """最大剪力170.71kN → Vc=63.25kN"""
+        """最大剪力170.71kN → Vc≈52.71kN（主梁 vc_coef=0.5）"""
         from app.solvers.main_beam.utils import calc_main_beam_shear
 
         result = calc_main_beam_shear(
@@ -192,6 +192,8 @@ class TestMainBeamShear:
         )
 
         assert result.max_shear == pytest.approx(170.71, abs=0.01)
+        # Vc = 0.5·ft·b·h₀/γd = 0.5·1.10·250·460/1200
+        assert result.vc == pytest.approx(52.71, abs=0.01)
         assert result.asv_s > 0
         assert result.recommended_spacing > 0
 
