@@ -50,6 +50,17 @@ interface BeamResult {
   reinforcement: { flexure: Flexure[]; shear: BeamShear }
 }
 
+// ── 主梁结果类型 ──
+interface MainBeamShear extends BeamShear { hanger_area: number }
+interface MainBeamResult {
+  load: { from_beam_dead: number; self_weight: number; plaster: number
+    dead_load_standard: number; dead_load_design: number
+    live_load_standard: number; live_load_design: number }
+  internal_forces: { M1_max: number; M2_max: number; M_B_min: number; M_C_min: number
+    VA_max: number; VBl_min: number; VBr_max: number }
+  reinforcement: { flexure: Flexure[]; shear: MainBeamShear }
+}
+
 // ── 格式化助手 ──
 /** 保留 d 位小数；空/非有限值返回 —。 */
 export function num(n: number | null | undefined, d = 2): string {
@@ -85,6 +96,9 @@ function slabOf(d: ProjectData): SlabResult {
 }
 function beamOf(d: ProjectData): BeamResult {
   return (d?.beam?.result ?? {}) as unknown as BeamResult
+}
+function mainBeamOf(d: ProjectData): MainBeamResult {
+  return (d?.main_beam?.result ?? {}) as unknown as MainBeamResult
 }
 
 // ══════════════════════════════════════════════
@@ -234,13 +248,54 @@ export function buildBeam(d: ProjectData): ReportBlock[] {
   return out
 }
 
-// ── 装配入口（本任务含前四章；后续任务追加构件章节） ──
+/** 五、主梁设计 */
+export function buildMainBeam(d: ProjectData): ReportBlock[] {
+  const s = d.structure
+  const r = mainBeamOf(d)
+  const ld = r.load ?? ({} as MainBeamResult['load'])
+  const ifr = r.internal_forces ?? ({} as MainBeamResult['internal_forces'])
+  const sh = r.reinforcement?.shear ?? ({} as MainBeamShear)
+  const out: ReportBlock[] = [h2('主梁设计')]
+  if (!d.main_beam?.initialized) {
+    out.push(note('主梁尚未计算，本章略。', 'warn'))
+    return out
+  }
+  const span = s.main_beam_spans ? (s.L2 ?? 0) / s.main_beam_spans : 0
+  out.push(h3('荷载计算（简化为集中荷载作用于三分点）'))
+  out.push(formula(`次梁传来恒载 ${num(ld.from_beam_dead)} kN；主梁自重 ${num(ld.self_weight)} kN；粉刷 ${num(ld.plaster)} kN`))
+  out.push(formula(`恒载标准值 Gk = ${num(ld.dead_load_standard, 3)} kN；设计值 G = γG·Gk = ${num(ld.dead_load_design, 3)} kN`))
+  out.push(formula(`活载标准值 Qk = ${num(ld.live_load_standard, 3)} kN；设计值 Q = γQ·Qk = ${num(ld.live_load_design, 3)} kN`))
+  out.push(figure('图：主梁计算简图', 'mainBeam', {
+    span, loadG: ld.dead_load_design, loadQ: ld.live_load_design,
+    columnWidth: s.column_width ?? 0, sectionSize: { b: s.main_beam_width ?? 0, h: s.main_beam_height ?? 0 },
+  }))
+  out.push(h3('内力计算（三跨连续梁最不利组合）'))
+  out.push(table('表：主梁控制截面最不利内力',
+    ['M1 (kN·m)', 'M_B (kN·m)', 'M2 (kN·m)', 'VA (kN)', 'VB左 (kN)', 'VB右 (kN)'],
+    [[num(ifr.M1_max, 1), num(ifr.M_B_min, 1), num(ifr.M2_max, 1),
+      num(ifr.VA_max, 1), num(ifr.VBl_min, 1), num(ifr.VBr_max, 1)]]))
+  out.push(h3('正截面强度及配筋计算（T 形）'))
+  out.push(table('表：主梁正截面强度及配筋',
+    ['截面', '类型', '计算宽', 'M (kN·m)', 'h0', 'αs', 'ξ', 'As需 (mm²)', '选筋', 'As实 (mm²)'],
+    (r.reinforcement?.flexure ?? []).map((f) => [
+      f.name, f.section_type, num(f.width_used, 0), num(f.moment, 3), num(f.h0, 0),
+      num(f.alpha_s, 4), num(f.xi, 4), Math.round(f.as_required), beamBarText(f.selected_bar), Math.round(f.as_provided),
+    ])))
+  out.push(h3('斜截面受剪承载力与吊筋'))
+  out.push(formula(`最大剪力 V = ${num(sh.max_shear, 3)} kN；混凝土受剪 Vc = ${num(sh.vc, 2)} kN；推荐箍筋间距 ${num(sh.recommended_spacing, 0)} mm`))
+  out.push(formula(`吊筋所需面积 Asb = γd·F/(fyv·sin45°) = ${num(sh.hanger_area, 0)} mm²`))
+  out.push(note('主梁弯矩/剪力包络图与抵抗弯矩图暂未自动生成（需后端逐工况采样数据）；控制截面内力见表。', 'info'))
+  return out
+}
+
+// ── 装配入口（本任务含前五章；后续任务追加汇总/构造/抵抗弯矩章节） ──
 export function buildReportDoc(d: ProjectData): ReportDoc {
   const sections: ReportSection[] = [
     { id: 'basic', number: '一', title: '设计基本资料', blocks: buildBasicInfo(d) },
     { id: 'layout', number: '二', title: '结构平面布置及构件截面尺寸初估', blocks: buildLayoutAndSize(d) },
     { id: 'slab', number: '三', title: '板设计', blocks: buildSlab(d) },
     { id: 'beam', number: '四', title: '次梁设计', blocks: buildBeam(d) },
+    { id: 'main', number: '五', title: '主梁设计', blocks: buildMainBeam(d) },
   ]
   return { cover: d.report ?? {}, sections }
 }

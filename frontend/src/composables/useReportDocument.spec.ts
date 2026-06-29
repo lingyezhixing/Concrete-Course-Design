@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildReportDoc, buildBasicInfo, buildSlab, buildBeam, num } from './useReportDocument'
+import { buildReportDoc, buildBasicInfo, buildSlab, buildBeam, buildMainBeam, num } from './useReportDocument'
 import { emptyProjectData } from '../api/projects'
 import type { ProjectData } from '../api/projects'
 
@@ -52,6 +52,21 @@ function fixture(): ProjectData {
     },
   }
   d.beam.initialized = true
+  d.main_beam.result = {
+    load: { from_beam_dead: 45.498, self_weight: 5.25, plaster: 0.4284,
+      dead_load_standard: 51.1764, dead_load_design: 53.7352,
+      live_load_standard: 48, live_load_design: 57.6 },
+    internal_forces: { M1_max: 166.7, M2_max: 87.99, M_B_min: -178.3, M_C_min: 0,
+      VA_max: 89.544, VBl_min: -143.259, VBr_max: 124.005 },
+    reinforcement: {
+      flexure: [{ name: '边跨中', section_type: 'T形(第一类)', width_used: 1977.5, moment: 166.7,
+        h0: 460, alpha_s: 0.0498, xi: 0.0511, as_required: 1652.9,
+        selected_bar: { count: 4, diameter: 25 }, as_provided: 1964, status: 'ok' }],
+      shear: { max_shear: 143.259, vc: 88.55, asv_s: 0.001,
+        recommended_spacing: 150, stirrup_ratio: 0.00268, hanger_area: 331 },
+    },
+  }
+  d.main_beam.initialized = true
   d.report = { name: '张三' }
   return d
 }
@@ -113,5 +128,16 @@ describe('buildBeam', () => {
     const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
     expect(formulas.some((t) => t.includes("g' = g + q/4"))).toBe(true)
     expect(formulas.some((t) => t.includes('0.7·ft·b·h₀'))).toBe(true)
+  })
+})
+
+describe('buildMainBeam', () => {
+  it('含集中荷载/吊筋公式与控制内力表', () => {
+    const blocks = buildMainBeam(fixture())
+    const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
+    expect(formulas.some((t) => t.includes('G = γG·Gk'))).toBe(true)
+    expect(formulas.some((t) => t.includes('吊筋所需面积'))).toBe(true)
+    const tables = blocks.filter((b) => b.kind === 'table') as Array<{ headers: string[] }>
+    expect(tables.some((t) => t.headers.includes('M1 (kN·m)'))).toBe(true)
   })
 })
