@@ -6,7 +6,6 @@ import pytest
 from app.solvers.common import (
     alpha_s,
     as_required,
-    calc_continuous_beam_internal_forces,
     calc_continuous_beam_internal_forces_detailed,
     calc_shear_design,
     effective_depth,
@@ -174,13 +173,3 @@ class TestCalcContinuousBeamDetailed:
         )
         mb = next(m for m in moments if m.name == "M_B")
         assert mb.value == pytest.approx(mb.m_raw + 1.5, abs=1e-3)
-
-    def test_backward_compat_wrapper(self):
-        """旧函数仍返回 (name, value) 元组，值与详细版一致"""
-        moments, _ = calc_continuous_beam_internal_forces(
-            g=5.4975, q=2.4, n=5,
-            middle_span=2.0, edge_span=1.92,
-            middle_net=1.8, edge_net=1.78,
-        )
-        assert moments[0][0] == "M1"
-        assert moments[0][1] == pytest.approx(2.468, abs=1e-2)

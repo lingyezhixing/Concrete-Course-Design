@@ -164,7 +164,7 @@ function sizeText(s: RebarSection): string {
 }
 .dim-text {
   fill: var(--muted-foreground);
-  font-size: 9px;
+  font-size: var(--text-xs);
 }
 
 .rebar-label {

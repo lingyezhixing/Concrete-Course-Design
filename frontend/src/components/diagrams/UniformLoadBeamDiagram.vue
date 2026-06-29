@@ -198,7 +198,7 @@ function fmt0(n: number): string {
 }
 .load-text {
   fill: var(--primary);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* 支座 + 地面 */
@@ -213,7 +213,7 @@ function fmt0(n: number): string {
 /* 跨度标注 */
 .dim-text {
   fill: var(--muted-foreground);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 .dim-text.equiv {
   fill: var(--warning);
@@ -229,7 +229,7 @@ function fmt0(n: number): string {
 }
 .equiv-note {
   fill: var(--warning);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* 截面缩略 */
@@ -242,7 +242,7 @@ function fmt0(n: number): string {
 /* 角注 */
 .note {
   fill: var(--muted-foreground);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* 窄屏：简图允许横向滚动，避免标注挤压 */

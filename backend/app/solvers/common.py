@@ -24,7 +24,6 @@ __all__ = [
     "MomentForceEntry",
     "ShearForceEntry",
     "calc_continuous_beam_internal_forces_detailed",
-    "calc_continuous_beam_internal_forces",
     "generate_bar_bundles",
     "calc_flexure_design",
     "calc_shear_design",
@@ -227,7 +226,7 @@ def calc_continuous_beam_internal_forces_detailed(
 ) -> tuple[list[MomentForceEntry], list[ShearForceEntry]]:
     """等跨连续梁（均布荷载）内力计算（详细版）— 板、次梁共用。
 
-    与 :func:`calc_continuous_beam_internal_forces` 同公式，但额外暴露 α/α1/β/β1、
+    额外暴露 α/α1/β/β1、
     g·l0²/q·l0²、g·ln/q·ln 与边缘调整前弯矩 m_raw，供计算书渲染内力系数详表：
 
       M = α·g·l0² + α1·q·l0²   (弯矩，用计算跨度 l0)
@@ -299,31 +298,6 @@ def calc_continuous_beam_internal_forces_detailed(
     return moments, shears
 
 
-def calc_continuous_beam_internal_forces(
-    g: float,
-    q: float,
-    n: int,
-    middle_span: float,
-    edge_span: float,
-    middle_net: float,
-    edge_net: float,
-    support_moment_delta: float = 0.0,
-) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
-    """等跨连续梁（均布荷载）内力计算 — 仅返回 (截面名, 设计值)，向后兼容。
-
-    详细系数与中间量见 :func:`calc_continuous_beam_internal_forces_detailed`。
-    """
-    moments, shears = calc_continuous_beam_internal_forces_detailed(
-        g=g, q=q, n=n, middle_span=middle_span, edge_span=edge_span,
-        middle_net=middle_net, edge_net=edge_net,
-        support_moment_delta=support_moment_delta,
-    )
-    return (
-        [(m.name, m.value) for m in moments],
-        [(s.name, s.value) for s in shears],
-    )
-
-
 # ──────────────────────────────────────────────
 # 梁配筋候选方案
 # 依据《附表 3-1 钢筋的公称直径、公称截面积及理论质量》
@@ -342,7 +316,7 @@ _BAR_COUNTS = [2, 3, 4, 5, 6, 7, 8]
 _MIN_BAR_CLEARANCE = 25.0
 
 
-def bar_clearance(beam_width: float, count: int, diameter: float) -> float:
+def _bar_clearance(beam_width: float, count: int, diameter: float) -> float:
     """梁宽方向钢筋净距 (b − n·d)/(n+1) (mm)。"""
     return (beam_width - count * diameter) / (count + 1)
 
@@ -369,7 +343,7 @@ def generate_bar_bundles(
 
     for d in _STANDARD_BAR_DIAMETERS:
         for n in _BAR_COUNTS:
-            if bar_clearance(beam_width, n, d) < _MIN_BAR_CLEARANCE:
+            if _bar_clearance(beam_width, n, d) < _MIN_BAR_CLEARANCE:
                 continue
             bar = BeamBarBundle(count=n, diameter=d)
             if bar.area >= as_required:

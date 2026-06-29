@@ -5,7 +5,7 @@
       :subtitle="currentUser ? `${currentUser.username} 的项目概览` : '项目概览'"
     />
 
-    <h3 v-if="projects.length || loading" class="grid-title">所有项目</h3>
+    <h2 v-if="projects.length || loading" class="grid-title">所有项目</h2>
 
     <!-- 加载骨架 -->
     <div v-if="loading" class="grid">

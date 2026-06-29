@@ -366,13 +366,12 @@ const rmData = computed(() => {
 .compact-table { font-size: var(--text-base); }
 .compact-table :deep(.el-table__cell) { padding: var(--space-1) 0; }
 .bar-cell { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-base); color: var(--foreground); }
-.bar-num { width: 56px; }
-.bar-num :deep(input) { text-align: center; padding-left: var(--space-1); padding-right: var(--space-1); }
 .bar-sel { width: 64px; }
 .bar-sel :deep(.el-select__wrapper) { padding: 0 var(--space-1); }
 .phi { color: var(--muted-foreground); }
 
 @media (max-width: 960px) {
   .force-split { grid-template-columns: 1fr; }
+  .load-grid { grid-template-columns: 1fr; }
 }
 </style>

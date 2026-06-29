@@ -56,9 +56,9 @@
         <span class="switch-text">
           {{ mode === 'login' ? '还没有账户？' : '已有账户？' }}
         </span>
-        <a class="switch-link" @click="toggleMode">
+        <button type="button" class="switch-link" @click="toggleMode">
           {{ mode === 'login' ? '去注册' : '去登录' }}
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -157,23 +157,23 @@ async function submit(): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--content-pad);
   background: var(--background);
   color: var(--foreground);
 }
 .login-card {
   width: 100%;
   max-width: 400px;
-  padding: 44px 40px 36px;
+  padding: var(--space-10) var(--space-10) var(--space-8);
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--el-box-shadow-dark);
 }
 .brand {
   width: 52px;
   height: 52px;
-  margin: 0 auto 20px;
+  margin: 0 auto var(--space-5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,36 +184,40 @@ async function submit(): Promise<void> {
 }
 .title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.3;
   text-align: center;
 }
 .subtitle {
-  margin: 8px 0 30px;
-  font-size: 13px;
+  margin: var(--space-2) 0 var(--space-8);
+  font-size: var(--text-base);
   color: var(--muted-foreground);
   text-align: center;
 }
 .submit {
   width: 100%;
   height: 44px;
-  margin-top: 4px;
-  font-size: 15px;
+  margin-top: var(--space-1);
+  font-size: var(--text-lg);
   font-weight: 600;
-  border-radius: 10px;
+  border-radius: var(--radius);
 }
 .switch {
-  margin-top: 22px;
+  margin-top: var(--space-6);
   text-align: center;
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 .switch-text {
   color: var(--muted-foreground);
 }
 .switch-link {
-  margin-left: 4px;
+  margin-left: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
   color: var(--primary);
   font-weight: 500;
   cursor: pointer;
@@ -223,7 +227,7 @@ async function submit(): Promise<void> {
   text-decoration: underline;
 }
 :deep(.el-input__wrapper) {
-  border-radius: 10px;
+  border-radius: var(--radius);
 }
 :deep(.el-form-item) {
   margin-bottom: 18px;

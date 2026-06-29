@@ -1,5 +1,5 @@
 <template>
-  <el-dropdown trigger="click" @command="onCommand">
+  <el-dropdown trigger="click" aria-label="用户菜单" @command="onCommand">
     <span class="user">
       <span class="avatar">{{ initial }}</span>
       <span class="name">{{ username }}</span>
@@ -63,8 +63,8 @@ async function onCommand(cmd: string): Promise<void> {
 .user {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius);
   cursor: pointer;
   color: var(--foreground);
@@ -81,11 +81,11 @@ async function onCommand(cmd: string): Promise<void> {
   border-radius: 50%;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 .name {
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 .active {
   color: var(--primary);

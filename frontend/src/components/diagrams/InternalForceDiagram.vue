@@ -172,13 +172,13 @@ function fmt(n: number): string {
 
 .axis-title {
   fill: var(--foreground);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 .axis-title .hint {
   fill: var(--muted-foreground);
   font-weight: 400;
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 
 .zero {
@@ -188,7 +188,7 @@ function fmt(n: number): string {
 
 .scale-text {
   fill: var(--muted-foreground);
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 
 /* 弯矩 */

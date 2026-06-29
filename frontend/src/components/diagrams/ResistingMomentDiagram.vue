@@ -131,10 +131,10 @@ function fmt(n: number): string {
 <style scoped>
 .rm-diagram { width: 100%; }
 .diagram-svg { display: block; width: 100%; height: auto; max-width: 640px; margin: 0 auto; overflow: visible; }
-.axis-title { fill: var(--foreground); font-size: 12px; font-weight: 600; }
-.axis-title .hint { fill: var(--muted-foreground); font-weight: 400; font-size: 10px; }
+.axis-title { fill: var(--foreground); font-size: var(--text-sm); font-weight: 600; }
+.axis-title .hint { fill: var(--muted-foreground); font-weight: 400; font-size: var(--text-xs); }
 .zero { stroke: var(--border); stroke-width: 1; }
-.scale-text { fill: var(--muted-foreground); font-size: 10px; }
+.scale-text { fill: var(--muted-foreground); font-size: var(--text-xs); }
 .m-fill { fill: color-mix(in srgb, var(--primary) 14%, transparent); stroke: none; }
 .m-line { fill: none; stroke: var(--primary); stroke-width: 1.8; }
 .mu-line { stroke: var(--success); stroke-width: 1.8; stroke-dasharray: 5 3; }

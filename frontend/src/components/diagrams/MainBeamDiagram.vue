@@ -150,7 +150,7 @@ function fmt0(n: number): string {
 }
 .force-text {
   fill: var(--destructive);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* 柱顶铰 */
@@ -178,13 +178,13 @@ function fmt0(n: number): string {
 }
 .dim text {
   fill: var(--muted-foreground);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* 角注 */
 .note {
   fill: var(--muted-foreground);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 @media (max-width: 560px) {

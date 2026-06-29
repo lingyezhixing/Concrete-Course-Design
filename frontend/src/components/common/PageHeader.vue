@@ -19,19 +19,19 @@ defineProps<{ title: string; subtitle?: string }>()
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 .title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-2xl);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--foreground);
 }
 .subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-base);
   color: var(--muted-foreground);
 }
 .action {

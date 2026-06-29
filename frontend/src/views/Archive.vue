@@ -21,7 +21,7 @@
         <div class="proj-info">
           <span class="proj-name">
             {{ p.name }}
-            <el-tag v-if="p.id === projectId" size="small" type="success" effect="plain" round>当前</el-tag>
+            <el-tag v-if="p.id === projectId" size="small" type="primary" effect="plain" round>当前</el-tag>
           </span>
           <span class="muted proj-meta">更新于 {{ p.updated_at }}</span>
         </div>
@@ -48,7 +48,7 @@
           </div>
           <el-dropdown trigger="click" @command="(c: string) => onSnapCmd(c, p.id, snap)">
             <el-button text size="small" class="more-btn" aria-label="快照操作">
-              <Ellipsis :size="15" />
+              <Ellipsis :size="16" />
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>

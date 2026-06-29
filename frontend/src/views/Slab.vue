@@ -523,14 +523,6 @@ function onSpacingChange(row: ReinfSection, s: number): void {
   font-size: var(--text-base);
   color: var(--foreground);
 }
-.bar-num {
-  width: 56px;
-}
-.bar-num :deep(input) {
-  text-align: center;
-  padding-left: var(--space-1);
-  padding-right: var(--space-1);
-}
 .bar-sel { width: 64px; }
 .bar-sel :deep(.el-select__wrapper) { padding: 0 var(--space-1); }
 .phi { color: var(--muted-foreground); }

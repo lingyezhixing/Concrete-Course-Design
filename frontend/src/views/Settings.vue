@@ -90,7 +90,7 @@ async function confirmDelete(): Promise<void> {
 
 <style scoped>
 .settings {
-  max-width: var(--content-max);
+  width: 100%;
 }
 /* .muted 全局已提供颜色与字号，此处仅补段落间距 */
 .muted {
