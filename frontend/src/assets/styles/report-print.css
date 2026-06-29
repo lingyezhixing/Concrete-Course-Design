@@ -1,61 +1,80 @@
-/* 计算书打印样式：隐藏 app 外壳，仅打印 .report-document；A4 分页规则。
-   由 main.ts 全局引入生效 @media print；ReportDocument.vue 的 scoped 样式负责屏幕预览外观。 */
-
-.report-document {
-  background: #fff;
-  color: #000;
-}
+/* 计算书打印样式：隐藏 app 外壳，使报告文档自然流入打印页。
+   由 main.ts 全局引入生效 @media print；不使用 position:absolute（浏览器多页打印时截断问题）。
+   scoped 样式中的背景/颜色在打印时须被 !important 覆盖（尤其暗色主题）。 */
 
 @media print {
   @page {
     size: A4;
-    margin: 18mm 16mm;
+    margin: 16mm 14mm;
   }
 
-  /* 强制黑底白字反白为黑字白底 —— scoped 的 .rp-doc { background: var(--card) }
-     在暗色主题会打印深色背景，需 !important 覆盖（全局规则不带 scoped 属性，特异性更低）。 */
+  /* ─── 隐藏非打印元素 ─── */
+  .app-header,
+  .app-sidebar,
+  .page-header,
+  .block.toolbar,
+  .save-state,
+  .ready-hint,
+  .el-button,
+  .block-title:has(+ .cover-form),
+  .cover-form {
+    display: none !important;
+  }
+
+  /* 让 .report 正常占据整宽 */
+  .report {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* preview 容器脱去屏幕样式 */
+  .block.preview {
+    background: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* ─── 计算书文档 ─── */
+  .report-document {
+    position: static !important;        /* 脱离 absolute，正常流分页打印 */
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    visibility: visible !important;
+  }
+
+  /* ─── 暗色主题强制 ─── */
   .rp-doc,
   .rp-doc * {
     color: #000 !important;
   }
-  .rp-doc,
-  .rp-doc .rp-table th,
-  .rp-doc .rp-note,
-  .rp-doc .rp-figure,
-  .rp-doc .rp-table-wrap {
+  .rp-doc {
     background: #fff !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12px !important;
   }
   .rp-doc .rp-table th,
   .rp-doc .rp-table td,
   .rp-doc .rp-cover-table td {
     border-color: #000 !important;
   }
-  /* SVG 简图：令牌色在打印仍可读，不强改 */
-
-  /* 隐藏整个应用外壳与工具条，只留计算书文档 */
-  body * {
-    visibility: hidden;
-  }
-  .report-document,
-  .report-document * {
-    visibility: visible;
-  }
-  .report-document {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
+  .rp-doc .rp-table th {
+    background: #eee !important;
   }
 
-  /* 封面独占一页 */
+  /* ─── 分页规则 ─── */
   .rp-cover {
     page-break-after: always;
   }
-  /* 表格、简图、章节标题尽量不跨页切割 */
   .rp-table-wrap,
   .rp-figure,
   .rp-section-title,
