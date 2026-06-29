@@ -7,7 +7,7 @@
 // 分别在板/次梁/主梁章节任务中加入），以通过 vue-tsc 的 noUnusedLocals。
 
 import type {
-  ReportBlock, ReportDoc, ReportSection,
+  ReportBlock, ReportDoc, ReportSection, TableBlock, FigureBlock,
 } from '../report/types'
 import { GAMMA_G, GAMMA_Q } from '../report/materials'
 import type { ProjectData } from '../api/projects'
@@ -15,6 +15,22 @@ import type { ProjectData } from '../api/projects'
 // ── 选筋类型（被 slabBarText/beamBarText 引用；构件章节会复用） ──
 interface SlabBar { diameter: number; spacing: number }
 interface BeamBar { count: number; diameter: number }
+
+// ── 板结果类型（镜像后端 SlabFullResult） ──
+interface NamedValue { name: string; value: number }
+interface SlabReinfSection {
+  name: string; moment: number; h0: number; alpha_s: number; xi: number
+  as_required: number; selected_bar: SlabBar | null; as_provided: number; status: string
+}
+interface SlabResult {
+  load: { terrazzo: number; concrete: number; plaster: number
+    dead_load_standard: number; dead_load_design: number
+    live_load_standard: number; live_load_design: number }
+  span: { middle_span: number; edge_span: number }
+  converted: { converted_dead: number; converted_live: number }
+  internal_forces: { moments: NamedValue[]; shears: NamedValue[] }
+  reinforcement: { sections: SlabReinfSection[] }
+}
 
 // ── 格式化助手 ──
 /** 保留 d 位小数；空/非有限值返回 —。 */
@@ -36,6 +52,19 @@ const h2 = (text: string): ReportBlock => ({ kind: 'heading', level: 2, text })
 const h3 = (text: string): ReportBlock => ({ kind: 'heading', level: 3, text })
 const para = (text: string): ReportBlock => ({ kind: 'paragraph', text })
 const formula = (text: string): ReportBlock => ({ kind: 'formula', text })
+const note = (text: string, tone: 'info' | 'warn' = 'info'): ReportBlock =>
+  ({ kind: 'note', text, tone })
+const table = (
+  caption: string | undefined, headers: string[], rows: (string | number)[][],
+): TableBlock => ({ kind: 'table', caption, headers, rows })
+const figure = (
+  caption: string, f: FigureBlock['figure'], props: Record<string, unknown>,
+): FigureBlock => ({ kind: 'figure', caption, figure: f, props })
+
+// ── 安全读取 result（未计算时给空对象） ──
+function slabOf(d: ProjectData): SlabResult {
+  return (d?.slab?.result ?? {}) as unknown as SlabResult
+}
 
 // ══════════════════════════════════════════════
 // 章节装配
@@ -76,11 +105,66 @@ export function buildLayoutAndSize(d: ProjectData): ReportBlock[] {
   return out
 }
 
-// ── 装配入口（本任务只含前两章；后续任务追加构件章节） ──
+/** 三、板设计 */
+export function buildSlab(d: ProjectData): ReportBlock[] {
+  const s = d.structure
+  const r = slabOf(d)
+  const ld = r.load ?? ({} as SlabResult['load'])
+  const cv = r.converted ?? ({} as SlabResult['converted'])
+  const sp = r.span ?? ({} as SlabResult['span'])
+  const out: ReportBlock[] = [h2('板设计')]
+  if (!d.slab?.initialized) {
+    out.push(note('板尚未计算，本章略。', 'warn'))
+    return out
+  }
+  // 荷载
+  out.push(h3('荷载计算（取 1 米板带）'))
+  out.push(formula(`水磨石面层：${num(ld.terrazzo)} kN/m²；钢筋混凝土板：${num(ld.concrete)} kN/m²；板底抹灰：${num(ld.plaster)} kN/m²`))
+  out.push(formula(`恒载标准值 gₖ = ${num(ld.dead_load_standard)} kN/m²；恒载设计值 g = γG·gₖ = ${GAMMA_G}×${num(ld.dead_load_standard)} = ${num(ld.dead_load_design)} kN/m²`))
+  out.push(formula(`活载标准值 qₖ = ${num(ld.live_load_standard)} kN/m²；活载设计值 q = γQ·qₖ = ${GAMMA_Q}×${num(ld.live_load_standard)} = ${num(ld.live_load_design)} kN/m²`))
+  out.push(formula(`折算荷载：g' = g + q/2 = ${num(cv.converted_dead)} kN/m；q' = q/2 = ${num(cv.converted_live)} kN/m`))
+  // 计算跨度
+  out.push(h3('计算跨度'))
+  out.push(formula(`边跨 l₀ = ${num(sp.edge_span)} m；中间跨 l₀ = ${num(sp.middle_span)} m`))
+  // 计算简图
+  out.push(figure('图：板计算简图', 'uniformBeam', {
+    rawSpans: s.slab_spans ?? 0, edgeSpan: sp.edge_span, midSpan: sp.middle_span,
+    loadDead: cv.converted_dead, loadLive: cv.converted_live,
+    sectionType: 'slab', sectionSize: { h: s.slab_thickness ?? 0 },
+  }))
+  // 内力表
+  out.push(h3('内力计算'))
+  out.push(table('表：板弯矩 M（kN·m/m）', ['截面', '弯矩值'],
+    (r.internal_forces?.moments ?? []).map((m) => [m.name, num(m.value, 3)])))
+  out.push(table('表：板剪力 V（kN/m）', ['截面', '剪力值'],
+    (r.internal_forces?.shears ?? []).map((v) => [v.name, num(v.value, 3)])))
+  out.push(figure('图：板弯矩图 / 剪力图', 'internalForce', {
+    moments: r.internal_forces?.moments ?? [], shears: r.internal_forces?.shears ?? [],
+    rawSpans: s.slab_spans ?? 0, edgeSpan: sp.edge_span, midSpan: sp.middle_span,
+  }))
+  // 配筋
+  out.push(h3('截面强度及配筋计算'))
+  out.push(table('表：板正截面强度及配筋计算',
+    ['截面', 'M (kN·m/m)', 'h0 (mm)', 'αs', 'ξ', 'As需 (mm²)', '选筋', 'As实 (mm²)'],
+    (r.reinforcement?.sections ?? []).map((c) => [
+      c.name, num(c.moment, 3), num(c.h0, 0), num(c.alpha_s, 4), num(c.xi, 4),
+      Math.round(c.as_required), slabBarText(c.selected_bar), Math.round(c.as_provided),
+    ])))
+  out.push(figure('图：板截面配筋简图', 'sectionRebar', {
+    sections: (r.reinforcement?.sections ?? []).map((c) => ({
+      name: c.name, shape: 'slab', b: 1000, h: s.slab_thickness ?? 0,
+      bar: { diameter: c.selected_bar?.diameter ?? 0, spacing: c.selected_bar?.spacing ?? 0 },
+    })),
+  }))
+  return out
+}
+
+// ── 装配入口（本任务含前三章；后续任务追加构件章节） ──
 export function buildReportDoc(d: ProjectData): ReportDoc {
   const sections: ReportSection[] = [
     { id: 'basic', number: '一', title: '设计基本资料', blocks: buildBasicInfo(d) },
     { id: 'layout', number: '二', title: '结构平面布置及构件截面尺寸初估', blocks: buildLayoutAndSize(d) },
+    { id: 'slab', number: '三', title: '板设计', blocks: buildSlab(d) },
   ]
   return { cover: d.report ?? {}, sections }
 }

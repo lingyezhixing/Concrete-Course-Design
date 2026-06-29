@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildReportDoc, buildBasicInfo, num } from './useReportDocument'
+import { buildReportDoc, buildBasicInfo, buildSlab, num } from './useReportDocument'
 import { emptyProjectData } from '../api/projects'
 import type { ProjectData } from '../api/projects'
 
@@ -17,6 +17,22 @@ function fixture(): ProjectData {
     reinforced_concrete_weight: 25, terrazzo_surface: 0.65,
     plaster_thickness: 15, plaster_weight: 17, live_load: 4,
   })
+  d.slab.result = {
+    load: { terrazzo: 0.65, concrete: 2.0, plaster: 0.255,
+      dead_load_standard: 2.905, dead_load_design: 3.0975,
+      live_load_standard: 4, live_load_design: 4.8 },
+    span: { middle_span: 2.0, edge_span: 1.92 },
+    converted: { converted_dead: 5.4975, converted_live: 2.4 },
+    internal_forces: {
+      moments: [{ name: 'M1', value: 2.468 }, { name: 'MB', value: -3.315 }],
+      shears: [{ name: 'VA', value: 5.765 }, { name: 'VB左', value: -8.579 }],
+    },
+    reinforcement: { sections: [{
+      name: '1', moment: 2.468, h0: 55, alpha_s: 0.102, xi: 0.108,
+      as_required: 210.8, selected_bar: { diameter: 8, spacing: 200 }, as_provided: 251, status: 'ok',
+    }] },
+  }
+  d.slab.initialized = true
   d.report = { name: '张三' }
   return d
 }
@@ -52,5 +68,22 @@ describe('buildReportDoc', () => {
     const titles = doc.sections.map((s) => s.title)
     expect(titles).toContain('设计基本资料')
     expect(titles).toContain('结构平面布置及构件截面尺寸初估')
+  })
+})
+
+describe('buildSlab', () => {
+  it('含荷载/折算/跨度公式与配筋表', () => {
+    const blocks = buildSlab(fixture())
+    const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
+    expect(formulas.some((t) => t.includes('g = γG·gₖ'))).toBe(true)
+    expect(formulas.some((t) => t.includes("g' = g + q/2"))).toBe(true)
+    const tables = blocks.filter((b) => b.kind === 'table') as Array<{ headers: string[]; rows: (string | number)[][] }>
+    expect(tables.some((t) => t.headers.includes('选筋'))).toBe(true)
+  })
+  it('未计算时给出 warn 提示', () => {
+    const d = fixture()
+    d.slab.initialized = false
+    const blocks = buildSlab(d)
+    expect(blocks.some((b) => b.kind === 'note')).toBe(true)
   })
 })
