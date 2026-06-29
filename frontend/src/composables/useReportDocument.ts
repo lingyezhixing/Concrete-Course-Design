@@ -288,7 +288,59 @@ export function buildMainBeam(d: ProjectData): ReportBlock[] {
   return out
 }
 
-// ── 装配入口（本任务含前五章；后续任务追加汇总/构造/抵抗弯矩章节） ──
+/** 六、配筋结果汇总 */
+export function buildReinfSummary(d: ProjectData): ReportBlock[] {
+  const out: ReportBlock[] = [h2('配筋结果汇总')]
+  const rows: (string | number)[][] = []
+  for (const f of beamOf(d).reinforcement?.flexure ?? []) {
+    rows.push(['次梁·' + f.name, f.section_type, beamBarText(f.selected_bar), Math.round(f.as_provided)])
+  }
+  for (const f of mainBeamOf(d).reinforcement?.flexure ?? []) {
+    rows.push(['主梁·' + f.name, f.section_type, beamBarText(f.selected_bar), Math.round(f.as_provided)])
+  }
+  for (const c of slabOf(d).reinforcement?.sections ?? []) {
+    rows.push(['板·' + c.name, '板带', slabBarText(c.selected_bar), Math.round(c.as_provided)])
+  }
+  if (!rows.length) out.push(note('尚无配筋结果。', 'warn'))
+  else out.push(table('表：配筋结果汇总', ['构件·截面', '类型', '选筋', 'As实 (mm²)'], rows))
+  return out
+}
+
+/** 七、构造措施说明 */
+export function buildConstructionNotes(d: ProjectData): ReportBlock[] {
+  const s = d.structure
+  const out: ReportBlock[] = [h2('构造措施说明')]
+  out.push(para('依据《水工钢筋混凝土结构学》及相关构造要求：'))
+  out.push(formula(`板：受力筋直径不宜小于 8 mm、间距不宜大于 200 mm；保护层 c = 20 mm；下部受力筋伸入支座锚固长度不小于 5d。`))
+  out.push(formula(`板分布筋单位长度截面面积不宜小于受力筋的 15%，间距不宜大于 250 mm；沿墙体嵌固端、墙角 45° 裂缝区、主梁连接处布置附加构造钢筋。`))
+  out.push(formula(`梁：纵筋直径、净距需满足构造；箍筋 ${num(s.beam_stirrup_diameter, 0)} mm（次梁）/ ${num(s.main_beam_stirrup_diameter, 0)} mm（主梁），保护层 c = 30 mm；架立筋、腰筋（hw > 450 mm 时）按构造布置。`))
+  out.push(formula(`锚固与搭接：搭接长度不小于 10d；主梁上部纵筋锚固长度不足时向下弯折，水平段 ≥ 0.4la。`))
+  out.push(note('以上为通用构造要求模板；具体根数、长度需结合配筋详图确定。', 'info'))
+  return out
+}
+
+/** 八、抵抗弯矩图说明（次梁） */
+export function buildResistingMoment(d: ProjectData): ReportBlock[] {
+  const s = d.structure
+  const r = beamOf(d)
+  const sp = r.span ?? ({} as BeamResult['span'])
+  const out: ReportBlock[] = [h2('抵抗弯矩图说明')]
+  if (!d.beam?.initialized || !(r.internal_forces?.moments?.length)) {
+    out.push(note('次梁未计算，抵抗弯矩图略。', 'warn'))
+    return out
+  }
+  out.push(para('抵抗弯矩图反映各截面实际配筋所能承担的弯矩 Mu（Mu = fc·b·x·(h0−x/2)，x = fy·As/(fc·b)），用以确定纵筋的截断与弯起位置。取次梁绘制。'))
+  out.push(figure('图：次梁抵抗弯矩图（设计弯矩 + 抵抗弯矩 Mu）', 'resistingMoment', {
+    moments: r.internal_forces.moments,
+    rawSpans: s.beam_spans ?? 0, edgeSpan: sp.edge_span, midSpan: sp.middle_span,
+    flexure: r.reinforcement?.flexure ?? [],
+  }))
+  out.push(formula('截断点：纵筋截断点至充分利用点距离 ≥ 1.2la + h0，至理论切断点 ≥ 20d；弯起点至充分利用点 ≥ 0.5h0。'))
+  out.push(note('图中 Mu 为各设计截面抵抗弯矩；具体截断/弯起位置需结合配筋详图与抵抗弯矩图包络确定。', 'info'))
+  return out
+}
+
+// ── 装配入口（8 章） ──
 export function buildReportDoc(d: ProjectData): ReportDoc {
   const sections: ReportSection[] = [
     { id: 'basic', number: '一', title: '设计基本资料', blocks: buildBasicInfo(d) },
@@ -296,6 +348,9 @@ export function buildReportDoc(d: ProjectData): ReportDoc {
     { id: 'slab', number: '三', title: '板设计', blocks: buildSlab(d) },
     { id: 'beam', number: '四', title: '次梁设计', blocks: buildBeam(d) },
     { id: 'main', number: '五', title: '主梁设计', blocks: buildMainBeam(d) },
+    { id: 'summary', number: '六', title: '配筋结果汇总', blocks: buildReinfSummary(d) },
+    { id: 'construction', number: '七', title: '构造措施说明', blocks: buildConstructionNotes(d) },
+    { id: 'resist', number: '八', title: '抵抗弯矩图说明', blocks: buildResistingMoment(d) },
   ]
   return { cover: d.report ?? {}, sections }
 }

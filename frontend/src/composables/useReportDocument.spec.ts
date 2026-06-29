@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { buildReportDoc, buildBasicInfo, buildSlab, buildBeam, buildMainBeam, num } from './useReportDocument'
+import {
+  buildReportDoc, buildBasicInfo, buildSlab, buildBeam, buildMainBeam,
+  buildReinfSummary, buildConstructionNotes, buildResistingMoment, num,
+} from './useReportDocument'
 import { emptyProjectData } from '../api/projects'
 import type { ProjectData } from '../api/projects'
 
@@ -139,5 +142,27 @@ describe('buildMainBeam', () => {
     expect(formulas.some((t) => t.includes('吊筋所需面积'))).toBe(true)
     const tables = blocks.filter((b) => b.kind === 'table') as Array<{ headers: string[] }>
     expect(tables.some((t) => t.headers.includes('M1 (kN·m)'))).toBe(true)
+  })
+})
+
+describe('收尾三章', () => {
+  it('配筋汇总合并三构件', () => {
+    const blocks = buildReinfSummary(fixture())
+    const tables = blocks.filter((b) => b.kind === 'table') as Array<{ rows: (string | number)[][] }>
+    expect(tables[0].rows.some((r) => String(r[0]).startsWith('次梁·'))).toBe(true)
+    expect(tables[0].rows.some((r) => String(r[0]).startsWith('主梁·'))).toBe(true)
+    expect(tables[0].rows.some((r) => String(r[0]).startsWith('板·'))).toBe(true)
+  })
+  it('构造措施含箍筋直径', () => {
+    const blocks = buildConstructionNotes(fixture())
+    const formulas = blocks.filter((b) => b.kind === 'formula').map((b) => (b as { text: string }).text)
+    expect(formulas.some((t) => t.includes('6 mm（次梁）'))).toBe(true)
+  })
+  it('抵抗弯矩章含 resistingMoment 图块', () => {
+    const blocks = buildResistingMoment(fixture())
+    expect(blocks.some((b) => b.kind === 'figure' && (b as { figure: string }).figure === 'resistingMoment')).toBe(true)
+  })
+  it('buildReportDoc 共 8 章', () => {
+    expect(buildReportDoc(fixture()).sections.length).toBe(8)
   })
 })
