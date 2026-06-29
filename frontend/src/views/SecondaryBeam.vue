@@ -96,6 +96,12 @@
         <InternalForceDiagram v-bind="mvData" />
       </section>
 
+      <!-- 抵抗弯矩图 -->
+      <section v-if="rmData" class="block">
+        <h2 class="block-title">抵抗弯矩图</h2>
+        <ResistingMomentDiagram v-bind="rmData" />
+      </section>
+
       <!-- 正截面配筋 -->
       <section class="block">
         <h2 class="block-title">正截面配筋</h2>
@@ -182,6 +188,7 @@ import {
 import UniformLoadBeamDiagram from '../components/diagrams/UniformLoadBeamDiagram.vue'
 import SectionRebarDiagram from '../components/diagrams/SectionRebarDiagram.vue'
 import InternalForceDiagram from '../components/diagrams/InternalForceDiagram.vue'
+import ResistingMomentDiagram from '../components/diagrams/ResistingMomentDiagram.vue'
 
 const noProjectIcon = markRaw(FolderOpen)
 const noCalcIcon = markRaw(Calculator)
@@ -310,6 +317,31 @@ const mvData = computed(() => {
     rawSpans: s.beam_spans,
     edgeSpan: r.span.edge_span,
     midSpan: r.span.middle_span,
+  }
+})
+
+/** 抵抗弯矩图入参：弯矩控制点 + 跨度 + 各截面配筋（as_provided/h0/width_used）。 */
+const rmData = computed(() => {
+  const s = data.value?.structure
+  const r = data.value?.beam?.result as
+    | {
+        span?: { edge_span?: number; middle_span?: number }
+        internal_forces?: { moments?: NamedValue[] }
+        reinforcement?: { flexure?: Flexure[] }
+      }
+    | undefined
+  if (!s || s.beam_spans == null) return null
+  if (r?.span?.edge_span == null || r?.span?.middle_span == null) return null
+  if (!r.internal_forces?.moments?.length) return null
+  if (!r.reinforcement?.flexure?.length) return null
+  return {
+    moments: r.internal_forces.moments,
+    rawSpans: s.beam_spans,
+    edgeSpan: r.span.edge_span,
+    midSpan: r.span.middle_span,
+    flexure: r.reinforcement.flexure.map((f) => ({
+      name: f.name, as_provided: f.as_provided, h0: f.h0, width_used: f.width_used,
+    })),
   }
 })
 </script>
