@@ -3,11 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/logo.ico" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%201024%201024%27%3E%3Cpath%20d%3D%27M832%20736a128%20128%200%200%200-125.28%20101.824l-318.304-0.064c-8.352-5.568-13.44-43.616-16.448-69.76h92.384c14.592%2019.328%2037.568%2032%2063.648%2032a80%2080%200%201%200-78.4-96h-86.24c-11.616-63.136-38.336-128-122.144-128H96a32%2032%200%201%200%200%2064h145.248c32.32%200%2047.136%2019.776%2056.704%2064H96a32%2032%200%200%200%200%2064h211.552c6.72%2060.064%2015.584%20133.824%2082.24%20133.824h318.176c0.8%200%201.44-0.384%202.208-0.448C726.272%20953.696%20774.4%20992%20832%20992a128%20128%200%200%200%200-256z%20m0%20192a64%2064%200%201%201%200.032-128.032A64%2064%200%200%201%20832%20928zM96%20512h384.512c1.344%200%202.496-0.608%203.776-0.768A127.744%20127.744%200%200%200%20608%20608a128%20128%200%200%200%200-256%20127.744%20127.744%200%200%200-123.712%2096.768c-1.28-0.16-2.432-0.768-3.776-0.768H96a32%2032%200%200%200%200%2064z%20m512-96a64%2064%200%201%201-0.032%20128.032A64%2064%200%200%201%20608%20416zM96%20389.792h145.248c108.224%200%20121.6-90.272%20129.6-144.192%206.688-45.504%2010.784-53.6%2018.944-53.6h298.56c14.592%2019.328%2037.568%2032%2063.648%2032a80%2080%200%201%200-78.4-96h-283.808C323.52%20128%20313.888%20193.12%20307.52%20236.224c-9.408%2063.648-18.048%2089.568-66.272%2089.568H96a32%2032%200%200%200%200%2064z%27%2F%3E%3C%2Fsvg%3E" />
     <title>混凝土课程设计 - 计算平台</title>
+    <style>
+      #app-loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#666;background:#fff}
+      #app-loader .spin{width:34px;height:34px;border:3px solid #e6e6e6;border-top-color:#2c6dd8;border-radius:50%;animation:app-spin .8s linear infinite}
+      @keyframes app-spin{to{transform:rotate(360deg)}}
+      @media(prefers-color-scheme:dark){#app-loader{background:#0d1117;color:#9aa4b2}#app-loader .spin{border-color:#263040;border-top-color:#4f93e8}}
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app"><div id="app-loader"><div class="spin"></div><div>加载中…</div></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
