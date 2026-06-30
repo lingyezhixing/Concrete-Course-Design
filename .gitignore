@@ -18,6 +18,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Generated PDF exports (e.g. IDE "export to PDF" of README)
+*.pdf
+
 # Env variables
 .env
 .env.local
